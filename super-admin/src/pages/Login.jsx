@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -11,6 +12,8 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -25,6 +28,9 @@ const Login = () => {
         [name]: ''
       }));
     }
+    // Clear messages when user starts typing
+    setErrorMessage('');
+    setSuccessMessage('');
   };
 
   const validateForm = () => {
@@ -48,17 +54,46 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
     
     if (validateForm()) {
       setIsLoading(true);
-      // Handle login logic here
-      console.log('Form submitted:', formData);
-      // Add your API call here
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        const response = await fetch('http://localhost:5000/api/superadmin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Save token to localStorage
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('superAdmin', JSON.stringify(data.superAdmin));
+          
+          setSuccessMessage('Login successful! Redirecting...');
+          
+          // Redirect to dashboard after 1.5 seconds
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1500);
+        } else {
+          setErrorMessage(data.message || 'Login failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        setErrorMessage('Network error. Please check your connection and try again.');
+      } finally {
         setIsLoading(false);
-      }, 1500);
+      }
     }
   };
 
@@ -82,6 +117,38 @@ const Login = () => {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-800 font-medium">{errorMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-800 font-medium">{successMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Email */}
             <div>

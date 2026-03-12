@@ -14,6 +14,9 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [apiError, setApiError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,13 +72,64 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Handle registration logic here
-      console.log('Form submitted:', formData);
-      // Add your API call here
+      setIsLoading(true);
+      setApiError('');
+      setSuccessMessage('');
+
+      try {
+        const response = await fetch('http://localhost:5000/api/superadmin/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fullName: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            organizationName: formData.organizationName,
+            phoneNumber: formData.phoneNumber
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Store token and user data in localStorage
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('superAdmin', JSON.stringify(data.superAdmin));
+          
+          setSuccessMessage('Registration successful! Redirecting to dashboard...');
+          
+          // Clear form
+          setFormData({
+            fullName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            organizationName: '',
+            phoneNumber: ''
+          });
+
+          // Redirect to dashboard after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/dashboard'; // Update this to your dashboard route
+          }, 2000);
+
+        } else {
+          // Handle error from backend
+          setApiError(data.message || 'Registration failed. Please try again.');
+        }
+
+      } catch (error) {
+        console.error('Registration error:', error);
+        setApiError('Network error. Please check your connection and try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -99,6 +153,30 @@ const Register = () => {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm text-green-800 font-medium">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {apiError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm text-red-800 font-medium">{apiError}</p>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-5" onSubmit={handleSubmit}>
             {/* Full Name */}
             <div>
@@ -264,7 +342,6 @@ const Register = () => {
                 <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>
               )}
             </div>
-
             {/* Terms and Conditions */}
             <div className="flex items-start">
               <input
@@ -288,9 +365,25 @@ const Register = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-[1.02]"
+              disabled={isLoading}
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Create Account
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Create Account
+                </>
+              )}
             </button>
           </form>
 
