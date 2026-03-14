@@ -1,26 +1,18 @@
-import React from 'react'
-<<<<<<< HEAD
-import Sidebar from './layout/Sidebar'
-=======
+import './App.css'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import './App.css'
->>>>>>> 3e4aeb936478211e0c9c603a5818a2986be56ab3
 
-const App = () => {
+function App() {
+
   return (
     <>
-<<<<<<< HEAD
-      <Sidebar/>
-=======
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
       </Router>
->>>>>>> 3e4aeb936478211e0c9c603a5818a2986be56ab3
     </>
   )
 }
