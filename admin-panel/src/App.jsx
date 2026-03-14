@@ -1,12 +1,11 @@
 import React from 'react'
+import Sidebar from './layout/Sidebar'
 
 const App = () => {
   return (
-    <div>
-      <h1 className="text-4xl font-bold text-blue-600">
-DiagnoOps Dashboard
-</h1>
-    </div>
+    <>
+      <Sidebar/>
+    </>
   )
 }
 

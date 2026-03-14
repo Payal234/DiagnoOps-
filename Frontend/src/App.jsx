@@ -4,7 +4,7 @@ import Topbar from "./layout/Topbar";
 
 // If you don't yet have a pages directory, simple placeholders
 import Dashboard from "./pages/Dashboard";
-import Tests from "./pages/Tests";
+// import Tests from "./pages/Tests";
 import Reports from "./pages/Reports";
 import Bookings from "./pages/Bookings";
 import Notifications from "./pages/Notifications";
@@ -13,7 +13,8 @@ import Cart from "./pages/Cart";
 import LabTests from "./pages/LabTests";
 import LabInfo from "./pages/LabInfo";
 import Footer from "./layout/Footer";
-import LabDetails from "./pages/Labdetails"
+import LabDetails from "./pages/Labdetails";
+import TestDetails from "./pages/TestDetails";
 
 function App() {
   return (
@@ -42,6 +43,11 @@ function App() {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/profile" element={<Profile />} />
+
+
+              {/* Test Details Page */}
+        <Route path="/test-details/:id" element={<TestDetails />} />
+
             </Routes>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, ArrowLeft } from "lucide-react";
 import { CartContext } from "../context/CartContext";
@@ -6,67 +6,36 @@ import { CartContext } from "../context/CartContext";
 const LabTests = () => {
   const { labId } = useParams();
   const navigate = useNavigate();
+
+  const [testsData, setTestsData] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+
   const { addToCart } = useContext(CartContext);
 
-  const allTests = [
-    {
-      id: 1,
-      name: "Complete Blood Count (CBC)",
-      price: 350,
-      category: "Blood",
-      type: "test",
-      time: "6 hours",
-      description: "Measures red & white blood cells, hemoglobin, platelets.",
-      lab: "1",
-    },
-    {
-      id: 2,
-      name: "Lipid Profile",
-      price: 600,
-      category: "Blood",
-      type: "test",
-      time: "12 hours",
-      description: "Checks cholesterol levels including HDL, LDL.",
-      lab: "1",
-    },
-    {
-      id: 3,
-      name: "Urine Routine & Microscopy",
-      price: 200,
-      category: "Urine",
-      type: "test",
-      time: "4 hours",
-      description: "Basic urine analysis for infections.",
-      lab: "2",
-    },
-    {
-      id: 4,
-      name: "Thyroid Panel",
-      price: 800,
-      category: "Blood",
-      type: "test",
-      time: "24 hours",
-      description: "Comprehensive thyroid function assessment.",
-      lab: "3",
-    },
-    {
-      id: 5,
-      name: "Full Body Checkup",
-      price: 2499,
-      category: "Packages",
-      type: "package",
-      time: "48 hours",
-      description: "Complete health check package.",
-      lab: "2",
-    },
-  ];
+  // 🔹 Fetch tests from backend
+  useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        let url = "http://localhost:5000/api/tests";
 
-  const testsData = labId
-    ? allTests.filter((t) => t.lab === labId)
-    : allTests;
+        if (labId) {
+          url = `http://localhost:5000/api/tests/lab/${labId}`;
+        }
 
+        const res = await fetch(url);
+        const data = await res.json();
+
+        setTestsData(data);
+      } catch (error) {
+        console.error("Error fetching tests:", error);
+      }
+    };
+
+    fetchTests();
+  }, [labId]);
+
+  // 🔹 Filter Logic
   const filteredTests = testsData.filter((item) => {
     const matchesSearch = item.name
       .toLowerCase()
@@ -104,6 +73,7 @@ const LabTests = () => {
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             size={18}
           />
+
           <input
             type="text"
             placeholder="Search tests..."
@@ -129,6 +99,7 @@ const LabTests = () => {
             </button>
           ))}
         </div>
+
       </div>
 
       {/* Test Cards */}
@@ -136,8 +107,8 @@ const LabTests = () => {
 
         {filteredTests.map((item) => (
           <div
-            key={item.id}
-            className="bg-white p-5 rounded-xl shadow-sm  hover:shadow-lg transition duration-300 flex flex-col justify-between"
+            key={item._id}
+            className="bg-white p-5 rounded-xl shadow-sm hover:shadow-lg transition duration-300 flex flex-col justify-between"
           >
 
             {/* Top */}
@@ -159,6 +130,7 @@ const LabTests = () => {
 
               {/* Tags */}
               <div className="flex justify-between items-center mt-4 text-sm">
+
                 <span className="bg-teal-50 text-teal-600 px-3 py-1 rounded-full">
                   {item.category}
                 </span>
@@ -166,21 +138,24 @@ const LabTests = () => {
                 <span className="text-gray-400">
                   Result: {item.time}
                 </span>
+
               </div>
-           </div>
+
+            </div>
 
             {/* Buttons */}
             <div className="mt-5 flex gap-2">
+
               <button
                 onClick={() => addToCart(item)}
                 className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg text-sm cursor-pointer"
               >
-              <ShoppingCart size={16} />
-              Add
+                <ShoppingCart size={16} />
+                Add
               </button>
 
               <button
-                onClick={() => navigate(`/test-details/${item.id}`)}
+                onClick={() => navigate(`/test-details/${item._id}`)}
                 className="flex-1 border border-teal-600 text-teal-600 hover:bg-teal-50 py-2 rounded-lg text-sm cursor-pointer"
               >
                 Details
@@ -199,6 +174,7 @@ const LabTests = () => {
           No tests found for this lab.
         </div>
       )}
+
     </div>
   );
 };
