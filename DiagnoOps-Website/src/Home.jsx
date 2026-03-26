@@ -1,85 +1,48 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Zap, Users, MapPin, Clock, Shield, TrendingUp, MapPinIcon, PhoneIcon } from 'lucide-react'
 
 const Home = () => {
   const [showAllLabs, setShowAllLabs] = useState(false)
+  const [labsData, setLabsData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  // Sample Labs Data
-  const labsData = [
-    {
-      id: 1,
-      name: 'Apollo Diagnostics',
-      location: 'Mumbai, Maharashtra',
-      rating: 4.8,
-      image: '🏥',
-      tests: '500+ Tests',
-      experience: '15 years'
-    },
-    {
-      id: 2,
-      name: 'Pathology Plus',
-      location: 'Delhi, India',
-      rating: 4.7,
-      image: '🩺',
-      tests: '450+ Tests',
-      experience: '12 years'
-    },
-    {
-      id: 3,
-      name: 'Care Labs',
-      location: 'Bangalore, Karnataka',
-      rating: 4.9,
-      image: '🔬',
-      tests: '600+ Tests',
-      experience: '18 years'
-    },
-    {
-      id: 4,
-      name: 'Wellness Center',
-      location: 'Pune, Maharashtra',
-      rating: 4.6,
-      image: '⚕️',
-      tests: '400+ Tests',
-      experience: '10 years'
-    },
-    {
-      id: 5,
-      name: 'Metro Diagnostics',
-      location: 'Chennai, Tamil Nadu',
-      rating: 4.8,
-      image: '🏥',
-      tests: '550+ Tests',
-      experience: '14 years'
-    },
-    {
-      id: 6,
-      name: 'Health Plus Labs',
-      location: 'Hyderabad, Telangana',
-      rating: 4.7,
-      image: '🩺',
-      tests: '480+ Tests',
-      experience: '11 years'
-    },
-    {
-      id: 7,
-      name: 'Prime Diagnostics',
-      location: 'Kolkata, West Bengal',
-      rating: 4.9,
-      image: '🔬',
-      tests: '520+ Tests',
-      experience: '16 years'
-    },
-    {
-      id: 8,
-      name: 'Excel Labs',
-      location: 'Ahmedabad, Gujarat',
-      rating: 4.6,
-      image: '⚕️',
-      tests: '420+ Tests',
-      experience: '9 years'
-    },
-  ]
+  const API_BASE = "http://localhost:5000"
+
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        setLoading(true)
+        setError("")
+        const res = await fetch(`${API_BASE}/api/labadmin/public`)
+        const contentType = res.headers.get("content-type") || ""
+
+        if (!contentType.includes("application/json")) {
+          const text = await res.text()
+          throw new Error(
+            `Expected JSON from API but got ${contentType || "unknown"}. ` +
+              `Is backend running on ${API_BASE}?`
+          )
+        }
+
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to load labs")
+        }
+
+        const labs = Array.isArray(data?.labs) ? data.labs : []
+        setLabsData(labs)
+      } catch (e) {
+        setError(e?.message || "Failed to load labs")
+        console.error("Error fetching labs:", e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLabs()
+  }, [])
 
   const displayedLabs = showAllLabs ? labsData : labsData.slice(0, 4)
   return (
@@ -423,74 +386,106 @@ const Home = () => {
             </p>
           </div>
 
-          {/* Labs Grid - 4 Cards per Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {displayedLabs.map((lab) => (
-              <div key={lab.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 overflow-hidden border border-gray-200">
-                {/* Lab Header */}
-                <div className="bg-gradient-to-r from-teal-500 to-blue-500 p-8 text-center">
-                  <div className="text-6xl mb-2">{lab.image}</div>
-                </div>
-
-                {/* Lab Content */}
-                <div className="p-6 space-y-4">
-                  <h3 className="text-lg font-bold text-gray-900">{lab.name}</h3>
-                  
-                  {/* Rating */}
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-yellow-400 text-lg">★</span>
-                    <span className="font-semibold text-gray-900">{lab.rating}</span>
-                    <span className="text-gray-500 text-sm">(Reviews)</span>
-                  </div>
-
-                  {/* Location */}
-                  <div className="flex items-start gap-2 text-gray-600 text-sm">
-                    <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-teal-600" />
-                    <span>{lab.location}</span>
-                  </div>
-
-                  {/* Tests Info */}
-                  <div className="flex items-center gap-2 text-gray-600 text-sm">
-                    <span>📋</span>
-                    <span>{lab.tests}</span>
-                  </div>
-
-                  {/* Experience */}
-                  <div className="flex items-center gap-2 text-gray-600 text-sm">
-                    <span>📅</span>
-                    <span>{lab.experience}</span>
-                  </div>
-
-                  {/* View Button */}
-                  <button className="w-full bg-teal-600 text-white py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 mt-4">
-                    View Details
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* See All Button */}
-          {!showAllLabs && labsData.length > 4 && (
-            <div className="text-center mt-10 md:mt-14">
-              <button
-                onClick={() => setShowAllLabs(true)}
-                className="bg-teal-600 text-white px-10 py-3 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 shadow-lg hover:shadow-xl"
-              >
-                See All Labs ({labsData.length})
-              </button>
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">Loading labs...</p>
             </div>
           )}
 
-          {/* Show Less Button */}
-          {showAllLabs && (
-            <div className="text-center mt-10 md:mt-14">
-              <button
-                onClick={() => setShowAllLabs(false)}
-                className="bg-gray-600 text-white px-10 py-3 rounded-lg font-semibold hover:bg-gray-700 transition duration-300 shadow-lg hover:shadow-xl"
-              >
-                Show Less
-              </button>
+          {/* Error State */}
+          {error && !loading && (
+            <div className="text-center py-12">
+              <p className="text-red-600 text-lg">{error}</p>
+            </div>
+          )}
+
+          {/* Labs Grid - 4 Cards per Row */}
+          {!loading && !error && labsData.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                {displayedLabs.map((lab) => (
+                  <div key={lab._id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition duration-300 overflow-hidden border border-gray-200">
+                    {/* Lab Header with Image */}
+                    <div className="bg-gradient-to-r from-teal-500 to-blue-500 p-8 text-center overflow-hidden h-48">
+                      {lab.labPhoto ? (
+                        <img
+                          src={lab.labPhoto}
+                          alt={lab.labName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="text-6xl flex items-center justify-center h-full">🏥</div>
+                      )}
+                    </div>
+
+                    {/* Lab Content */}
+                    <div className="p-6 space-y-4">
+                      <h3 className="text-lg font-bold text-gray-900">{lab.labName}</h3>
+                      
+                      {/* Owner Name */}
+                      <div className="flex items-start gap-2 text-gray-600 text-sm">
+                        <span>👤</span>
+                        <span>{lab.ownerName || "N/A"}</span>
+                      </div>
+
+                      {/* Location */}
+                      <div className="flex items-start gap-2 text-gray-600 text-sm">
+                        <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-teal-600" />
+                        <span>{lab.address || "—"}</span>
+                      </div>
+
+                      {/* Time */}
+                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                        <Clock className="w-4 h-4 text-teal-600" />
+                        <span>{lab.openingTime || "—"} - {lab.closingTime || "—"}</span>
+                      </div>
+
+                      {/* Experience */}
+                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                        <span>📅</span>
+                        <span>{lab.experience === 0 || lab.experience ? `${lab.experience} years` : "—"}</span>
+                      </div>
+
+                      {/* View Button */}
+                      <button className="w-full bg-teal-600 text-white py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 mt-4">
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* See All Button */}
+              {!showAllLabs && labsData.length > 4 && (
+                <div className="text-center mt-10 md:mt-14">
+                  <button
+                    onClick={() => setShowAllLabs(true)}
+                    className="bg-teal-600 text-white px-10 py-3 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    See All Labs ({labsData.length})
+                  </button>
+                </div>
+              )}
+
+              {/* Show Less Button */}
+              {showAllLabs && (
+                <div className="text-center mt-10 md:mt-14">
+                  <button
+                    onClick={() => setShowAllLabs(false)}
+                    className="bg-gray-600 text-white px-10 py-3 rounded-lg font-semibold hover:bg-gray-700 transition duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Show Less
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* No Labs State */}
+          {!loading && !error && labsData.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-600 text-lg">No labs available at the moment</p>
             </div>
           )}
         </div>

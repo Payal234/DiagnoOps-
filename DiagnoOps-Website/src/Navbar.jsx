@@ -47,10 +47,13 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Get Started Button */}
-          <div className="hidden md:block">
+          {/* Desktop Join Buttons */}
+          <div className="hidden md:flex items-center gap-3">
             <button className="bg-teal-600 text-white px-6 lg:px-8 py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 shadow-md hover:shadow-lg text-sm lg:text-base">
-              Get Started
+              Join Patient
+            </button>
+            <button className="bg-gray-800 text-white px-6 lg:px-8 py-2.5 rounded-lg font-semibold hover:bg-gray-900 transition duration-300 shadow-md hover:shadow-lg text-sm lg:text-base">
+              Join Admin
             </button>
           </div>
 
@@ -86,10 +89,13 @@ const Navbar = () => {
               </a>
             ))}
             
-            {/* Mobile Get Started Button */}
-            <div className="px-3 py-2">
+            {/* Mobile Join Buttons */}
+            <div className="px-3 py-2 space-y-2">
               <button className="w-full bg-teal-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 shadow-md text-base">
-                Get Started
+                Join Patient
+              </button>
+              <button className="w-full bg-gray-800 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-900 transition duration-300 shadow-md text-base">
+                Join Admin
               </button>
             </div>
 
