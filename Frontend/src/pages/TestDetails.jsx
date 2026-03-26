@@ -1,136 +1,46 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 const TestDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [test, setTest] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const tests = [
-    {
-      id: "1",
-      name: "Complete Blood Count (CBC)",
-      price: 350,
-      category: "Blood",
-      time: "6 hours",
-      description: "Measures red & white blood cells, hemoglobin and platelets.",
+  useEffect(() => {
+    const fetchTest = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`http://localhost:5000/api/tests/${id}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch test details");
+        }
+        const data = await res.json();
+        setTest(data);
+      } catch (err) {
+        setError(err.message || "Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      whyNeeded:
-        "CBC test helps doctors detect infections, anemia, immune system disorders and blood related diseases.",
+    fetchTest();
+  }, [id]);
 
-      preparation:
-        "Usually no fasting is required. Drink water and avoid heavy meals before the test.",
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600">Loading test details...</div>
+    );
+  }
 
-      precautions:
-        "Inform your doctor if you are taking any medicines or supplements.",
-
-      procedure:
-        "A small blood sample is taken from a vein in your arm using a sterile needle.",
-
-      resultMeaning:
-        "The report shows levels of RBC, WBC, hemoglobin and platelets which help diagnose health conditions.",
-    },
-
-    {
-      id: "2",
-      name: "Lipid Profile",
-      price: 600,
-      category: "Blood",
-      time: "12 hours",
-      description: "Checks cholesterol levels including HDL and LDL.",
-
-      whyNeeded:
-        "Used to evaluate risk of heart disease and monitor cholesterol levels.",
-
-      preparation:
-        "Fasting for 9–12 hours is usually required before the test.",
-
-      precautions:
-        "Avoid fatty foods and alcohol before the test.",
-
-      procedure:
-        "A blood sample is collected from the arm for cholesterol analysis.",
-
-      resultMeaning:
-        "Shows levels of total cholesterol, HDL, LDL and triglycerides.",
-    },
-
-    {
-      id: "3",
-      name: "Urine Routine & Microscopy",
-      price: 200,
-      category: "Urine",
-      time: "4 hours",
-      description: "Basic urine analysis for infections and kidney issues.",
-
-      whyNeeded:
-        "Helps detect urinary tract infections, kidney problems and metabolic disorders.",
-
-      preparation:
-        "Collect mid-stream urine sample in a sterile container.",
-
-      precautions:
-        "Avoid contamination of the urine sample.",
-
-      procedure:
-        "Urine sample is tested under microscope and chemically analyzed.",
-
-      resultMeaning:
-        "Shows presence of bacteria, proteins, sugar and other substances.",
-    },
-
-    {
-      id: "4",
-      name: "Thyroid Panel",
-      price: 800,
-      category: "Blood",
-      time: "24 hours",
-      description: "Comprehensive thyroid function assessment.",
-
-      whyNeeded:
-        "Used to diagnose thyroid disorders like hypothyroidism and hyperthyroidism.",
-
-      preparation:
-        "Usually no fasting required unless advised by doctor.",
-
-      precautions:
-        "Inform doctor about thyroid medications before test.",
-
-      procedure:
-        "Blood sample collected and analyzed for T3, T4 and TSH levels.",
-
-      resultMeaning:
-        "Abnormal levels may indicate thyroid gland problems.",
-    },
-
-    {
-      id: "5",
-      name: "Full Body Checkup",
-      price: 2499,
-      category: "Packages",
-      time: "48 hours",
-      description: "Complete health check package for overall health screening.",
-
-      whyNeeded:
-        "Helps detect early signs of diseases and monitor overall health.",
-
-      preparation:
-        "12 hour fasting recommended before the test.",
-
-      precautions:
-        "Avoid alcohol and heavy food before test day.",
-
-      procedure:
-        "Includes multiple blood, urine and health screening tests.",
-
-      resultMeaning:
-        "Provides a complete overview of your health condition.",
-    },
-  ];
-
-  const test = tests.find((t) => t.id === id);
-
-  if (!test) {
-    return <div className="p-6 text-center">Test not found</div>;
+  if (error || !test) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        {error || "Test not found"}
+      </div>
+    );
   }
 
   return (

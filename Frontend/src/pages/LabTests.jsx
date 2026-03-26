@@ -20,15 +20,29 @@ const LabTests = () => {
         let url = "http://localhost:5000/api/tests";
 
         if (labId) {
-          url = `http://localhost:5000/api/tests/lab/${labId}`;
+          url = `http://localhost:5000/api/tests/lab/${encodeURIComponent(labId)}`;
         }
 
         const res = await fetch(url);
-        const data = await res.json();
+        const contentType = res.headers.get("content-type") || "";
 
-        setTestsData(data);
+        if (!contentType.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(
+            `Expected JSON from API but got ${contentType || "unknown"}. ` +
+              `Response: ${text.slice(0, 80)}...`
+          );
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to load tests");
+        }
+
+        setTestsData(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Error fetching tests:", error);
+        setTestsData([]);
       }
     };
 

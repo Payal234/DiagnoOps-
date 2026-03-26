@@ -276,8 +276,8 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          {/* Divider */}
+          
+             {/* Divider */}
           {/* <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -298,7 +298,7 @@ const Login = () => {
               Create Super Admin Account
             </Link>
           </div> */}
-        </div>
+          </div>
 
         {/* Security Notice */}
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">

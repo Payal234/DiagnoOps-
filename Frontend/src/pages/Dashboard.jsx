@@ -3,6 +3,7 @@ import HeroDiagno from "../components/dashboard/HeroDiagno"
 import AboutDiagno from "../components/dashboard/AboutDiagno";
 import WhyDiagno from "../components/dashboard/WhyDiagno";
 import HowItWorks from "../components/dashboard/HowItWorks";
+import Testimonial  from "../components/dashboard/Testimonial";
 
 
 const Dashboard = () => {
@@ -65,6 +66,7 @@ const Dashboard = () => {
 <AboutDiagno/>
 <WhyDiagno/>
 <HowItWorks/>
+<Testimonial/>
      
 
       </div>

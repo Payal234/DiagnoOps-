@@ -1,44 +1,48 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 const Labdetails = () => {
   const navigate = useNavigate();
 
-  const labsData = [
-    {
-      _id: "1",
-      name: "City Diagnostic Lab",
-      ownerName: "Dr. Sharma",
-      image: "/images/Lab1.png", // served from public/ folder
-      location: "Nagpur",
-      openTime: "8:00 AM",
-      closeTime: "8:00 PM",
-      days: "Mon - Sat",
-      experience: "15 years",
-    },
-    {
-      _id: "2",
-      name: "HealthCare Pathology",
-      ownerName: "Dr. Mehta",
-      image: "/images/Lab1.png",
-      location: "Pune",
-      openTime: "7:00 AM",
-      closeTime: "9:00 PM",
-      days: "Mon - Sat",
-      experience: "10 years",
-    },
-    {
-      _id: "3",
-      name: "LifeLine Diagnostics",
-      ownerName: "Dr. Patel",
-      image: "/images/Lab1.png",
-      location: "Mumbai",
-      openTime: "9:00 AM",
-      closeTime: "7:00 PM",
-      days: "Mon - Sat",
-      experience: "20 years",
-    },
-  ];
+  const API_BASE = "http://localhost:5000";
+
+  const [labsData, setLabsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch(`${API_BASE}/api/labadmin/public`);
+        const contentType = res.headers.get("content-type") || "";
+
+        if (!contentType.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(
+            `Expected JSON from API but got ${contentType || "unknown"}. ` +
+              `Is backend running on ${API_BASE}? Response: ${text.slice(0, 80)}...`
+          );
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to load labs");
+        }
+
+        const labs = Array.isArray(data?.labs) ? data.labs : [];
+        setLabsData(labs);
+      } catch (e) {
+        setError(e?.message || "Failed to load labs");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLabs();
+  }, []);
 
 
   return (
@@ -51,51 +55,56 @@ const Labdetails = () => {
         <ArrowLeft size={18}  /> Back
       </button>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-      {labsData.map((lab) => (
+      {loading ? (
+        <div className="mt-6 text-gray-600">Loading labs...</div>
+      ) : error ? (
+        <div className="mt-6 text-red-600">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mt-6">
+        {labsData.map((lab) => (
         <div
           key={lab._id}
           className="bg-white shadow-md rounded-lg overflow-hidden"
         >
           <img
-            src={lab.image}
-            alt={lab.name}
+            src={lab.labPhoto || "/images/Lab1.png"}
+            alt={lab.labName}
             className="w-full h-40 sm:h-48 object-cover"
           />
 
           <div className="p-3 sm:p-4">
-            <h2 className="text-lg font-semibold">{lab.name}</h2>
+            <h2 className="text-lg font-semibold">{lab.labName}</h2>
 
             <p className="text-sm text-gray-600">
               Owner: {lab.ownerName}
             </p>
 
             <p className="text-sm text-gray-600">
-              Location: {lab.location}
+              Address: {lab.address || "—"}
             </p>
 
             <p className="text-sm text-gray-600">
-              Time: {lab.openTime} - {lab.closeTime}
+              Time: {lab.openingTime || "—"} - {lab.closingTime || "—"}
             </p>
 
             <p className="text-sm text-gray-600">
-              Days: {lab.days}
+              Days: {lab.openingDay || "—"}
             </p>
 
             <p className="text-sm text-gray-600">
-              Experience: {lab.experience}
+              Experience: {lab.experience === 0 || lab.experience ? `${lab.experience} years` : "—"}
             </p>
 
             <div className="flex gap-3 mt-4">
               <button
-                onClick={() => navigate(`/lab-tests/${lab._id}`)}
+                onClick={() => navigate(`/lab-tests/${encodeURIComponent(lab.labName)}`)}
                 className="px-3 py-1 bg-green-500 text-white rounded cursor-pointer"
               >
                 Visit
               </button>
 
               <button
-                onClick={() => navigate(`/lab-details/${lab._id}`)}
+                onClick={() => navigate(`/lab-details/${encodeURIComponent(lab.labName)}`)}
                 className="px-3 py-1 bg-gray-800 text-white rounded cursor-pointer"
               >
                 Explore More
@@ -103,8 +112,9 @@ const Labdetails = () => {
             </div>
           </div>
         </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      )}
   </div>
   );
 };

@@ -15,6 +15,7 @@ import LabInfo from "./pages/LabInfo";
 import Footer from "./layout/Footer";
 import LabDetails from "./pages/Labdetails";
 import TestDetails from "./pages/TestDetails";
+import JoinPlatform from "./components/dashboard/JoinPlatform";
 
 function App() {
   return (
@@ -46,8 +47,8 @@ function App() {
 
 
               {/* Test Details Page */}
-        <Route path="/test-details/:id" element={<TestDetails />} />
-
+              <Route path="/test-details/:id" element={<TestDetails />} />
+              <Route path="/join-platform" element={<JoinPlatform />} />
             </Routes>
           </div>
 

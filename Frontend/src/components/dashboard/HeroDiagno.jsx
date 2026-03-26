@@ -21,11 +21,17 @@ const HeroDiagno = () => {
 
           <Link
             to="/labs"
-            className="inline-block bg-teal-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-teal-700 transition shadow-md"
+            className="inline-block bg-teal-600 text-white px-7 py-3 rounded-lg font-medium hover:bg-teal-700 transition shadow-md mr-3"
           >
             Explore Labs
           </Link>
 
+          <Link
+            to="/join-platform"
+            className="inline-block bg-white text-teal-600 border border-teal-600 px-7 py-3 rounded-lg font-medium hover:bg-teal-50 transition shadow-md"
+          >
+            Join Platform
+          </Link>
         </div>
 
         {/* Hero video */}

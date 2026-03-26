@@ -7,34 +7,66 @@ const LabInfo = () => {
   const { labId } = useParams();
   const navigate = useNavigate();
   const [labInfo, setLabInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const API_BASE = "http://localhost:5000";
 
   useEffect(() => {
-    // TODO: replace with real API call
-    // fetch(`/api/labs/${labId}`)
-    //   .then(res => res.json())
-    //   .then(data => setLabInfo(data))
-    //   .catch(console.error);
+    const fetchLab = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch(
+          `${API_BASE}/api/labadmin/public/${encodeURIComponent(labId || "")}`
+        );
 
-    // derive a real-looking name for now; replace with backend data later
-    const names = {
-      "1": "City Diagnostic Lab",
-      "2": "HealthCare Pathology",
-      "3": "LifeLine Diagnostics",
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(
+            `Expected JSON from API but got ${contentType || "unknown"}. ` +
+              `Is backend running on ${API_BASE}? Response: ${text.slice(0, 80)}...`
+          );
+        }
+
+        const data = await res.json();
+
+        const lab = data?.lab;
+        if (!res.ok || !lab) throw new Error(data?.message || "Lab not found");
+
+        setLabInfo({
+          id: labId,
+          name: lab.labName || labId,
+          slogan: "Leading the way in diagnostic excellence",
+          about:
+            "This lab has been providing high quality diagnostics. Our state-of-the-art equipment ensures accurate results.",
+          whyChooseUs:
+            "Experienced technicians, fast turnaround time, and a patient-centric approach make us a top choice.",
+          experience:
+            lab.experience === 0 || lab.experience ? `${lab.experience} years` : "—",
+          patients: "—",
+          address: lab.address || "—",
+          image: lab.labPhoto || "/images/Lab1.png",
+        });
+      } catch (e) {
+        setError(e?.message || "Failed to load lab information");
+        setLabInfo(null);
+      } finally {
+        setLoading(false);
+      }
     };
-    setLabInfo({
-      id: labId,
-      name: names[labId] || `Lab ${labId}`,
-      slogan: "Leading the way in diagnostic excellence",
-      about:
-        "This lab has been providing high quality diagnostics for over 20 years. Our state-of-the-art equipment ensures accurate results.",
-      whyChooseUs:
-        "Experienced technicians, fast turnaround time, and a patient-centric approach make us the top choice in the region.",
-      experience: "20 years",
-      patients: "50,000+",
-      address: "123 Health St, City",
-      image: "/images/Lab1.png",
-    });
+
+    fetchLab();
   }, [labId]);
+
+  if (loading) {
+    return <div className="p-6 text-center">Loading lab information...</div>;
+  }
+
+  if (error) {
+    return <div className="p-6 text-center text-red-600">{error}</div>;
+  }
 
   if (!labInfo) {
     return (
