@@ -95,11 +95,43 @@ const ManageLab = () => {
         { headers: { Authorization: token ? `Bearer ${token}` : "" } }
       );
       fetchLabs();
+      if (selectedLab?._id === id) {
+        setSelectedLab((prev) => (prev ? { ...prev, status } : prev));
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const deleteLab = async (id) => {
+    try {
+      setUpdatingId(id);
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/labadmin/${id}`, {
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+      });
+      fetchLabs();
+      if (selectedLab?._id === id) {
+        setSelectedLab(null);
+        setIsDetailOpen(false);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const openDetails = (lab) => {
+    setSelectedLab(lab);
+    setIsDetailOpen(true);
+  };
+
+  const closeDetails = () => {
+    setSelectedLab(null);
+    setIsDetailOpen(false);
   };
 
   const approved = labs.filter((l) => l.status === "approved").length;
@@ -241,6 +273,13 @@ const ManageLab = () => {
                   {/* Action Buttons */}
                   <div className="flex gap-2 flex-wrap">
                     <button
+                      onClick={() => openDetails(lab)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 shadow-sm hover:shadow-md">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                      View Details
+                    </button>
+
+                    <button
                       disabled={lab.status === "approved" || updatingId === lab._id}
                       onClick={() => updateStatus(lab._id, "approved")}
                       className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all
@@ -276,6 +315,77 @@ const ManageLab = () => {
           ))}
         </div>
       )}
+
+      {isDetailOpen && selectedLab && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
+          <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-auto max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Lab Details</h2>
+                <p className="text-xs text-slate-500">{selectedLab.labName || "—"}</p>
+              </div>
+              <button onClick={closeDetails} className="text-slate-500 hover:text-slate-900 text-sm font-semibold">Close</button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Field label="Lab Name" value={selectedLab.labName} />
+                <Field label="Owner Name" value={getOwnerDisplayName(selectedLab)} />
+                <Field label="Email" value={selectedLab.email} />
+                <Field label="Mobile" value={selectedLab.mobile} />
+                <Field label="Address" value={selectedLab.address} />
+                <Field label="Experience" value={selectedLab.experience ? `${selectedLab.experience} yrs` : "—"} />
+                <Field label="Opening" value={`${selectedLab.openingDay || "—"} ${selectedLab.openingTime || ""}-${selectedLab.closingTime || ""}`} />
+                <Field label="Status" value={selectedLab.status || "pending"} />
+                <Field label="Slogan" value={selectedLab.slogan || "—"} />
+                <Field label="About" value={selectedLab.about || "—"} />
+                <Field label="Why Choose Us" value={selectedLab.whyChooseUs || "—"} />
+                <Field label="Happy Patients" value={selectedLab.happyPatients !== undefined ? String(selectedLab.happyPatients) : "—"} />
+              </div>
+              <div className="space-y-3">
+                <div className="h-56 bg-slate-100 rounded-xl overflow-hidden">
+                  <img src={selectedLab.labPhoto || "/images/Lab1.png"} alt={selectedLab.labName} className="w-full h-full object-cover" />
+                </div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">License Document</p>
+                  {selectedLab.licenseFile ? (
+                    <a href={selectedLab.licenseFile} target="_blank" rel="noreferrer" className="text-sm font-semibold text-blue-700 hover:underline">View file</a>
+                  ) : (
+                    <p className="text-sm text-slate-500">Not uploaded</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    disabled={selectedLab.status === "approved" || updatingId === selectedLab._id}
+                    onClick={() => updateStatus(selectedLab._id, "approved")}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    Approve
+                  </button>
+
+                  <button
+                    disabled={selectedLab.status === "rejected" || updatingId === selectedLab._id}
+                    onClick={() => updateStatus(selectedLab._id, "rejected")}
+                    className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 disabled:opacity-60"
+                  >
+                    Reject
+                  </button>
+
+                  <button
+                    disabled={updatingId === selectedLab._id}
+                    onClick={() => deleteLab(selectedLab._id)}
+                    className="px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-semibold hover:bg-rose-600 disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

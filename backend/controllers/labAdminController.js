@@ -57,7 +57,7 @@ export const getPublicLabs = async (req, res) => {
   try {
     const labs = await LabAdmin.find({ status: "approved" })
       .select(
-        "ownerName labName address openingDay openingTime closingTime experience labPhoto createdAt"
+        "ownerName labName address openingDay openingTime closingTime experience labPhoto slogan about whyChooseUs happyPatients createdAt"
       )
       .sort({ createdAt: -1 });
 
@@ -74,6 +74,10 @@ export const getPublicLabs = async (req, res) => {
         closingTime: l.closingTime,
         experience: l.experience,
         labPhoto: l.labPhoto,
+        slogan: l.slogan,
+        about: l.about,
+        whyChooseUs: l.whyChooseUs,
+        happyPatients: l.happyPatients,
         createdAt: l.createdAt,
       }));
 
@@ -93,7 +97,7 @@ export const getPublicLabByName = async (req, res) => {
 
     const lab = await LabAdmin.findOne({ status: "approved", labName })
       .select(
-        "ownerName labName address openingDay openingTime closingTime experience labPhoto createdAt"
+        "ownerName labName address openingDay openingTime closingTime experience labPhoto slogan about whyChooseUs happyPatients createdAt"
       );
 
     if (!lab) {
@@ -112,6 +116,10 @@ export const getPublicLabByName = async (req, res) => {
         closingTime: lab.closingTime,
         experience: lab.experience,
         labPhoto: lab.labPhoto,
+        slogan: lab.slogan,
+        about: lab.about,
+        whyChooseUs: lab.whyChooseUs,
+        happyPatients: lab.happyPatients,
         createdAt: lab.createdAt,
       },
     });
@@ -159,6 +167,10 @@ export const updateLabAdminMe = async (req, res) => {
       "openingTime",
       "closingTime",
       "address",
+      "slogan",
+      "about",
+      "whyChooseUs",
+      "happyPatients",
     ];
 
     const update = {};
@@ -190,6 +202,14 @@ export const updateLabAdminMe = async (req, res) => {
         return res.status(400).json({ message: "Experience must be 0 or greater" });
       }
       update.experience = exp;
+    }
+
+    if (update.happyPatients !== undefined && update.happyPatients !== null && update.happyPatients !== "") {
+      const hp = Number(update.happyPatients);
+      if (Number.isNaN(hp) || hp < 0) {
+        return res.status(400).json({ message: "Happy Patients must be 0 or greater" });
+      }
+      update.happyPatients = hp;
     }
 
     const updated = await LabAdmin.findByIdAndUpdate(
@@ -249,6 +269,11 @@ export const registerLabAdmin = async (req, res) => {
       openingTime: data.openingTime,
       closingTime: data.closingTime,
       address: data.address,
+
+      slogan: data.slogan || "",
+      about: data.about || "",
+      whyChooseUs: data.whyChooseUs || "",
+      happyPatients: data.happyPatients ? Number(data.happyPatients) : 0,
 
       licenseFile: licenseFileUrl,
     });

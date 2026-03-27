@@ -38,14 +38,15 @@ const LabInfo = () => {
         setLabInfo({
           id: labId,
           name: lab.labName || labId,
-          slogan: "Leading the way in diagnostic excellence",
-          about:
-            "This lab has been providing high quality diagnostics. Our state-of-the-art equipment ensures accurate results.",
-          whyChooseUs:
-            "Experienced technicians, fast turnaround time, and a patient-centric approach make us a top choice.",
+          slogan: lab.slogan || "",
+          about: lab.about || "",
+          whyChooseUs: lab.whyChooseUs || "",
           experience:
             lab.experience === 0 || lab.experience ? `${lab.experience} years` : "—",
-          patients: "—",
+          patients:
+            lab.happyPatients === 0 || lab.happyPatients
+              ? String(lab.happyPatients)
+              : "—",
           address: lab.address || "—",
           image: lab.labPhoto || "/images/Lab1.png",
         });
