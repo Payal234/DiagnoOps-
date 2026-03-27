@@ -1,4 +1,5 @@
 import LabAdmin from "../models/LabAdmin.js";
+import SuperAdmin from "../models/SuperAdmin.js";
 import bcrypt from "bcryptjs";
 import { sendEmail } from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
@@ -57,7 +58,7 @@ export const getPublicLabs = async (req, res) => {
   try {
     const labs = await LabAdmin.find({ status: "approved" })
       .select(
-        "ownerName labName address openingDay openingTime closingTime experience labPhoto createdAt"
+        "ownerName labName address openingDay openingTime closingTime experience labPhoto slogan about whyChooseUs happyPatients createdAt"
       )
       .sort({ createdAt: -1 });
 
@@ -74,6 +75,10 @@ export const getPublicLabs = async (req, res) => {
         closingTime: l.closingTime,
         experience: l.experience,
         labPhoto: l.labPhoto,
+        slogan: l.slogan,
+        about: l.about,
+        whyChooseUs: l.whyChooseUs,
+        happyPatients: l.happyPatients,
         createdAt: l.createdAt,
       }));
 
@@ -93,7 +98,7 @@ export const getPublicLabByName = async (req, res) => {
 
     const lab = await LabAdmin.findOne({ status: "approved", labName })
       .select(
-        "ownerName labName address openingDay openingTime closingTime experience labPhoto createdAt"
+        "ownerName labName address openingDay openingTime closingTime experience labPhoto slogan about whyChooseUs happyPatients createdAt"
       );
 
     if (!lab) {
@@ -112,6 +117,10 @@ export const getPublicLabByName = async (req, res) => {
         closingTime: lab.closingTime,
         experience: lab.experience,
         labPhoto: lab.labPhoto,
+        slogan: lab.slogan,
+        about: lab.about,
+        whyChooseUs: lab.whyChooseUs,
+        happyPatients: lab.happyPatients,
         createdAt: lab.createdAt,
       },
     });
@@ -159,6 +168,10 @@ export const updateLabAdminMe = async (req, res) => {
       "openingTime",
       "closingTime",
       "address",
+      "slogan",
+      "about",
+      "whyChooseUs",
+      "happyPatients",
     ];
 
     const update = {};
@@ -190,6 +203,14 @@ export const updateLabAdminMe = async (req, res) => {
         return res.status(400).json({ message: "Experience must be 0 or greater" });
       }
       update.experience = exp;
+    }
+
+    if (update.happyPatients !== undefined && update.happyPatients !== null && update.happyPatients !== "") {
+      const hp = Number(update.happyPatients);
+      if (Number.isNaN(hp) || hp < 0) {
+        return res.status(400).json({ message: "Happy Patients must be 0 or greater" });
+      }
+      update.happyPatients = hp;
     }
 
     const updated = await LabAdmin.findByIdAndUpdate(
@@ -250,10 +271,52 @@ export const registerLabAdmin = async (req, res) => {
       closingTime: data.closingTime,
       address: data.address,
 
+      slogan: data.slogan || "",
+      about: data.about || "",
+      whyChooseUs: data.whyChooseUs || "",
+      happyPatients: data.happyPatients ? Number(data.happyPatients) : 0,
+
       licenseFile: licenseFileUrl,
     });
 
     await newLabAdmin.save();
+
+    // Notify super admin(s) about the new lab registration
+    try {
+      let superAdminEmails = [];
+      if (process.env.SUPERADMIN_EMAIL) {
+        superAdminEmails = process.env.SUPERADMIN_EMAIL.split(",").map((e) => e.trim()).filter(Boolean);
+      }
+
+      if (superAdminEmails.length === 0) {
+        const admins = await SuperAdmin.find({}).select("email").lean();
+        superAdminEmails = admins.map((admin) => admin.email).filter(Boolean);
+      }
+
+      if (superAdminEmails.length > 0) {
+        const subject = "New Lab Registration Awaiting Approval";
+        const approveUrl = (process.env.ADMIN_PANEL_URL || "http://localhost:5174").replace(/\/$/, "") + "/super-admin/manage-labs";
+
+        const html = `
+          <h2>New Lab Registration</h2>
+          <p>A new lab has registered and needs your review.</p>
+          <ul>
+            <li><strong>Owner:</strong> ${newLabAdmin.ownerName || "N/A"}</li>
+            <li><strong>Lab Name:</strong> ${newLabAdmin.labName || "N/A"}</li>
+            <li><strong>Email:</strong> ${newLabAdmin.email}</li>
+            <li><strong>Mobile:</strong> ${newLabAdmin.mobile || "N/A"}</li>
+            <li><strong>License #:</strong> ${newLabAdmin.licenseNumber || "N/A"}</li>
+          </ul>
+          <p>Review and approve it here: <a href="${approveUrl}">${approveUrl}</a></p>
+        `;
+
+        await Promise.all(superAdminEmails.map((sendTo) => sendEmail(sendTo, subject, html)));
+      } else {
+        console.log("No super admin email configured to send new registration alerts.");
+      }
+    } catch (notifyError) {
+      console.log("Failed to send super admin notification email:", notifyError);
+    }
 
     res.json({
       success: true,

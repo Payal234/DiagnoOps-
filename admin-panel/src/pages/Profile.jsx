@@ -23,6 +23,10 @@ const Profile = () => {
     openingTime: "",
     closingTime: "",
     address: "",
+    slogan: "",
+    about: "",
+    whyChooseUs: "",
+    happyPatients: "",
   });
 
   const [initialSnapshot, setInitialSnapshot] = useState(null);
@@ -64,6 +68,13 @@ const Profile = () => {
         openingTime: labAdmin.openingTime || "",
         closingTime: labAdmin.closingTime || "",
         address: labAdmin.address || "",
+        slogan: labAdmin.slogan || "",
+        about: labAdmin.about || "",
+        whyChooseUs: labAdmin.whyChooseUs || "",
+        happyPatients:
+          labAdmin.happyPatients === 0 || labAdmin.happyPatients
+            ? String(labAdmin.happyPatients)
+            : "",
       };
 
       setForm(nextForm);
@@ -122,6 +133,10 @@ const Profile = () => {
         openingTime: form.openingTime,
         closingTime: form.closingTime,
         address: form.address,
+        slogan: form.slogan,
+        about: form.about,
+        whyChooseUs: form.whyChooseUs,
+        happyPatients: form.happyPatients,
       };
 
       const res = labPhotoFile
@@ -156,6 +171,13 @@ const Profile = () => {
           openingTime: updated.openingTime || "",
           closingTime: updated.closingTime || "",
           address: updated.address || "",
+          slogan: updated.slogan || "",
+          about: updated.about || "",
+          whyChooseUs: updated.whyChooseUs || "",
+          happyPatients:
+            updated.happyPatients === 0 || updated.happyPatients
+              ? String(updated.happyPatients)
+              : "",
         };
         setForm(nextForm);
         setInitialSnapshot(nextForm);
@@ -342,6 +364,54 @@ const Profile = () => {
                   value={form.closingTime}
                   onChange={handleChange}
                   placeholder="e.g. 07:00 PM"
+                  disabled={!isEditing}
+                />
+              </div>
+
+              <div>
+                <label className={lc}>Slogan</label>
+                <input
+                  className={`${ic} ${!isEditing ? "bg-slate-50" : ""}`}
+                  name="slogan"
+                  value={form.slogan}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+              </div>
+
+              <div>
+                <label className={lc}>Happy Patients</label>
+                <input
+                  className={`${ic} ${!isEditing ? "bg-slate-50" : ""}`}
+                  name="happyPatients"
+                  type="number"
+                  min={0}
+                  value={form.happyPatients}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className={lc}>About Us</label>
+                <textarea
+                  className={`${ic} ${!isEditing ? "bg-slate-50" : ""}`}
+                  name="about"
+                  value={form.about}
+                  onChange={handleChange}
+                  rows={3}
+                  disabled={!isEditing}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className={lc}>Why Choose Us</label>
+                <textarea
+                  className={`${ic} ${!isEditing ? "bg-slate-50" : ""}`}
+                  name="whyChooseUs"
+                  value={form.whyChooseUs}
+                  onChange={handleChange}
+                  rows={3}
                   disabled={!isEditing}
                 />
               </div>

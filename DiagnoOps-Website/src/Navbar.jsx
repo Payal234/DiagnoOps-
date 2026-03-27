@@ -1,117 +1,147 @@
-import React, { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [activeLink, setActiveLink] = useState("Home");
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen)
-  }
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const navLinks = [
-    { label: 'Home', href: '#home', id: 'home' },
-    { label: 'About', href: '#about', id: 'about' },
-    { label: 'Services', href: '#services', id: 'services' },
-    { label: 'Contact', href: '#contact', id: 'contact' },
-  ]
-
-  const handleNavClick = (href) => {
-    setIsOpen(false)
-  }
+    { label: "Home", href: "#home" },
+    { label: "About", href: "#about" },
+    { label: "Services", href: "#services" },
+    { label: "Contact", href: "#contact" },
+  ];
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 md:h-20">
-          
-          {/* Logo / Brand */}
-          <div className="flex-shrink-0 flex items-center">
-            <a href="#home" className="flex items-center gap-2">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-teal-600 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg md:text-xl">D</span>
-              </div>
-              <span className="text-xl md:text-2xl font-bold text-gray-900 hidden sm:inline">DiagnoOps</span>
-            </a>
-          </div>
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 backdrop-blur-lg border-b ${
+        scrolled
+          ? "bg-white/95 shadow-md border-teal-100"
+          : "bg-white/90 border-transparent"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-5">
+        <div className="flex items-center justify-between h-16">
 
-          {/* Desktop Navigation */}
+          {/* ✅ Logo (Increased Size) */}
+          <a href="#home" className="flex items-center gap-3">
+            <img
+              src="/logo1.png"
+              alt="DiagnoOps"
+              className="h-12 w-auto md:h-14 object-contain"
+            />
+          </a>
+
+          {/* Desktop Links */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
-                key={link.id}
+                key={link.label}
                 href={link.href}
-                className="text-gray-700 hover:text-teal-600 font-medium transition duration-300 text-sm lg:text-base"
+                onClick={() => setActiveLink(link.label)}
+                className="relative text-gray-600 font-medium text-sm hover:text-teal-700 transition"
               >
                 {link.label}
+                <span
+                  className={`absolute left-0 -bottom-1 h-[2px] bg-gradient-to-r from-teal-600 to-teal-400 transition-all duration-300 ${
+                    activeLink === link.label ? "w-full" : "w-0 hover:w-full"
+                  }`}
+                ></span>
               </a>
             ))}
           </div>
 
-          {/* Desktop Join Buttons */}
+          {/* Desktop Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="bg-teal-600 text-white px-6 lg:px-8 py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 shadow-md hover:shadow-lg text-sm lg:text-base">
+            <Link to="/join-platform" className="bg-gradient-to-r from-teal-600 to-teal-400 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg hover:-translate-y-[1px] transition">
               Join Patient
-            </button>
-            <button className="bg-gray-800 text-white px-6 lg:px-8 py-2.5 rounded-lg font-semibold hover:bg-gray-900 transition duration-300 shadow-md hover:shadow-lg text-sm lg:text-base">
+            </Link>
+            <Link to="/join-platform" className="bg-slate-900 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition">
               Join Admin
-            </button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-teal-600 hover:bg-gray-100 transition duration-300"
-              aria-expanded="false"
-            >
-              {isOpen ? (
-                <X className="block h-6 w-6" />
-              ) : (
-                <Menu className="block h-6 w-6" />
-              )}
-            </button>
-          </div>
+          <button
+            className="md:hidden flex flex-col gap-[5px] p-2 border border-teal-200 rounded-lg"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <span
+              className={`h-[2px] w-5 bg-teal-700 transition ${
+                isOpen ? "rotate-45 translate-y-[6px]" : ""
+              }`}
+            />
+            <span
+              className={`h-[2px] w-5 bg-teal-700 transition ${
+                isOpen ? "opacity-0" : ""
+              }`}
+            />
+            <span
+              className={`h-[2px] w-5 bg-teal-700 transition ${
+                isOpen ? "-rotate-45 -translate-y-[6px]" : ""
+              }`}
+            />
+          </button>
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
-      {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+      {/* Mobile Drawer */}
+      <div
+        className={`md:hidden overflow-hidden transition-all duration-300 ${
+          isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="px-5 pb-5 border-t border-teal-100">
+          <div className="flex flex-col gap-2 mt-3">
             {navLinks.map((link) => (
               <a
-                key={link.id}
+                key={link.label}
                 href={link.href}
-                className="text-gray-700 hover:text-teal-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium transition duration-300"
-                onClick={() => handleNavClick(link.href)}
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 text-gray-700 py-2 px-3 rounded-lg hover:bg-teal-50 hover:text-teal-700 transition"
               >
+                <span className="w-2 h-2 bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full"></span>
                 {link.label}
               </a>
             ))}
-            
-            {/* Mobile Join Buttons */}
-            <div className="px-3 py-2 space-y-2">
-              <button className="w-full bg-teal-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 shadow-md text-base">
-                Join Patient
-              </button>
-              <button className="w-full bg-gray-800 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-900 transition duration-300 shadow-md text-base">
-                Join Admin
-              </button>
-            </div>
-
-            {/* Mobile Login Link */}
-            <a
-              href="/login"
-              className="text-teal-600 hover:text-teal-700 block px-3 py-2 rounded-md text-base font-medium transition duration-300"
-              onClick={() => handleNavClick('/login')}
-            >
-              Login
-            </a>
           </div>
-        </div>
-      )}
-    </nav>
-  )
-}
 
-export default Navbar
+          <div className="my-3 h-[1px] bg-gradient-to-r from-transparent via-teal-200 to-transparent"></div>
+
+          <div className="flex flex-col gap-2">
+            <Link
+              to="/join-platform"
+              onClick={() => setIsOpen(false)}
+              className="w-full text-center bg-gradient-to-r from-teal-600 to-teal-400 text-white py-2 rounded-lg font-semibold shadow-md"
+            >
+              Join Patient
+            </Link>
+            <Link
+              to="/join-platform"
+              onClick={() => setIsOpen(false)}
+              className="w-full text-center bg-slate-900 text-white py-2 rounded-lg font-semibold hover:bg-slate-800 transition"
+            >
+              Join Admin
+            </Link>
+          </div>
+
+          <a
+            href="/login"
+            className="block text-center text-teal-600 font-semibold mt-3 text-sm hover:underline"
+          >
+            Already have an account? Login →
+          </a>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

@@ -16,6 +16,11 @@ const labAdminSchema = new mongoose.Schema(
     licenseFile: String,
     labPhoto: String,
 
+    slogan: String,
+    about: String,
+    whyChooseUs: String,
+    happyPatients: Number,
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],

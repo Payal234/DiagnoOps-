@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Navbar from './Navbar'
 import Footer from './Footer'
 import Home from './Home'
+import JoinPlatform from './pages/JoinPlatform'
 
 
 function App() {
@@ -14,6 +15,8 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home />} />
+
+              <Route path="/join-platform" element={<JoinPlatform />} />
           </Routes>
         </main>
         <Footer />
