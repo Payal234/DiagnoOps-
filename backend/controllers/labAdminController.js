@@ -1,4 +1,5 @@
 import LabAdmin from "../models/LabAdmin.js";
+import SuperAdmin from "../models/SuperAdmin.js";
 import bcrypt from "bcryptjs";
 import { sendEmail } from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
@@ -279,6 +280,43 @@ export const registerLabAdmin = async (req, res) => {
     });
 
     await newLabAdmin.save();
+
+    // Notify super admin(s) about the new lab registration
+    try {
+      let superAdminEmails = [];
+      if (process.env.SUPERADMIN_EMAIL) {
+        superAdminEmails = process.env.SUPERADMIN_EMAIL.split(",").map((e) => e.trim()).filter(Boolean);
+      }
+
+      if (superAdminEmails.length === 0) {
+        const admins = await SuperAdmin.find({}).select("email").lean();
+        superAdminEmails = admins.map((admin) => admin.email).filter(Boolean);
+      }
+
+      if (superAdminEmails.length > 0) {
+        const subject = "New Lab Registration Awaiting Approval";
+        const approveUrl = (process.env.ADMIN_PANEL_URL || "http://localhost:5174").replace(/\/$/, "") + "/super-admin/manage-labs";
+
+        const html = `
+          <h2>New Lab Registration</h2>
+          <p>A new lab has registered and needs your review.</p>
+          <ul>
+            <li><strong>Owner:</strong> ${newLabAdmin.ownerName || "N/A"}</li>
+            <li><strong>Lab Name:</strong> ${newLabAdmin.labName || "N/A"}</li>
+            <li><strong>Email:</strong> ${newLabAdmin.email}</li>
+            <li><strong>Mobile:</strong> ${newLabAdmin.mobile || "N/A"}</li>
+            <li><strong>License #:</strong> ${newLabAdmin.licenseNumber || "N/A"}</li>
+          </ul>
+          <p>Review and approve it here: <a href="${approveUrl}">${approveUrl}</a></p>
+        `;
+
+        await Promise.all(superAdminEmails.map((sendTo) => sendEmail(sendTo, subject, html)));
+      } else {
+        console.log("No super admin email configured to send new registration alerts.");
+      }
+    } catch (notifyError) {
+      console.log("Failed to send super admin notification email:", notifyError);
+    }
 
     res.json({
       success: true,

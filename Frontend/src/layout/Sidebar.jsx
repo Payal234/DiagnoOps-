@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/" },
-  // { name: "Tests & Packages", icon: FlaskConical, path: "/tests" },
+  { name: "Available Labs", icon: FlaskConical, path: "/Labs" },
   { name: "My Bookings", icon: CalendarCheck, path: "/bookings" },
   { name: "Reports", icon: FileText, path: "/reports" },
   { name: "Notifications", icon: Bell, path: "/notifications" },

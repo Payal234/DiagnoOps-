@@ -60,6 +60,8 @@ const ManageLab = () => {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState(null);
+  const [selectedLab, setSelectedLab] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   useEffect(() => { fetchLabs(); }, []);
 

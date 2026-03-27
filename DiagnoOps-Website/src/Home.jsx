@@ -89,27 +89,20 @@ const Home = () => {
             </div>
 
             {/* Hero Image/Illustration */}
-            <div className="flex justify-center md:justify-end pt-8 md:pt-0">
-              <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">
-                <div className="bg-gradient-to-br from-teal-400 to-blue-400 rounded-2xl lg:rounded-3xl p-8 shadow-2xl">
-                  <div className="bg-white rounded-xl p-6 space-y-4">
-                    <div className="h-3 bg-teal-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-teal-100 rounded w-full"></div>
-                    <div className="h-3 bg-teal-100 rounded w-5/6"></div>
-                    <div className="pt-4 border-t border-gray-200 mt-6 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-teal-600 rounded-full"></div>
-                        <div className="flex-1 h-2 bg-gray-200 rounded w-2/3"></div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
-                        <div className="flex-1 h-2 bg-gray-200 rounded w-2/3"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+           
+             {/* Hero video */}
+        <div className="flex justify-center md:justify-end">
+          <div className="w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <video
+              src="/Hero_v.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full rounded-lg"
+            />
+          </div>
+        </div>
           </div>
         </div>
       </section>
@@ -150,15 +143,15 @@ const Home = () => {
             </div>
 
             {/* Right Image */}
-            <div className="flex justify-center">
-              <div className="w-full max-w-sm bg-gradient-to-br from-teal-500 to-blue-500 rounded-2xl p-8 shadow-lg">
-                <div className="bg-white rounded-xl p-8 text-center space-y-4">
-                  <div className="text-5xl mb-4">🏥</div>
-                  <p className="text-gray-700 font-semibold">Professional Diagnostics</p>
-                  <p className="text-gray-500 text-sm">Trusted by thousands for accurate results</p>
-                </div>
-              </div>
-            </div>
+           <div className="flex justify-center md:justify-end">
+          <div className="w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <img
+              src="/about.png"
+             alt="about-img"
+              className="w-full h-auto sm:h-80 md:h-96 lg:h-[28rem] object-contain rounded-lg"
+            />
+          </div>
+        </div>
           </div>
         </div>
       </section>
