@@ -276,7 +276,7 @@ const ManageLab = () => {
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => openDetails(lab)}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 shadow-sm hover:shadow-md">
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-900 shadow-sm hover:shadow-md cursor-pointer">
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                       View Details
                     </button>
@@ -326,7 +326,7 @@ const ManageLab = () => {
                 <h2 className="text-xl font-bold text-slate-900">Lab Details</h2>
                 <p className="text-xs text-slate-500">{selectedLab.labName || "—"}</p>
               </div>
-              <button onClick={closeDetails} className="text-slate-500 hover:text-slate-900 text-sm font-semibold">Close</button>
+              <button onClick={closeDetails} className="text-slate-500 hover:text-slate-900 text-sm font-semibold cursor-pointer">Close</button>
             </div>
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">

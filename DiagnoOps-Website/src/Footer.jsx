@@ -1,8 +1,25 @@
 import React, { useState } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { FaFacebook, FaTwitter, FaLinkedin, FaInstagram } from 'react-icons/fa'
 import { MdMail, MdPhone, MdLocationOn, MdSend } from 'react-icons/md'
 
 const Footer = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const navigateToHash = (hash) => {
+    if (location.pathname !== '/') {
+      navigate(`/#${hash}`)
+      return
+    }
+
+    const target = document.getElementById(hash)
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.location.hash = hash
+    }
+  }
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
 
@@ -19,28 +36,28 @@ const Footer = () => {
     {
       title: 'Quick Links',
       links: [
-        { label: 'Home', href: '/' },
-        { label: 'About Us', href: '/about' },
-        { label: 'Services', href: '/services' },
-        { label: 'Contact', href: '/contact' },
+        { label: 'Home', href: '#home', hash: 'home' },
+        { label: 'About Us', href: '#about', hash: 'about' },
+        { label: 'Services', href: '#services', hash: 'services' },
+        { label: 'Contact', href: '#contact', hash: 'contact' },
       ]
     },
     {
       title: 'Platform',
       links: [
-        { label: 'For Patients', href: '/patients' },
-        { label: 'For Labs', href: '/labs' },
-        { label: 'For Admins', href: '/admin' },
-        { label: 'Pricing', href: '/pricing' },
+        { label: 'For Patients', href: '/platform' },
+        { label: 'For Labs', href: '/platform' },
+        { label: 'For Admins', href: '/platform' },
+        { label: 'Pricing', href: '/platform' },
       ]
     },
     {
       title: 'Support',
       links: [
-        { label: 'Help Center', href: '/help' },
-        { label: 'Documentation', href: '/docs' },
-        { label: 'Report Issue', href: '/report' },
-        { label: 'FAQs', href: '/faq' },
+        { label: 'Help Center', href: '/support' },
+        { label: 'Documentation', href: '/support' },
+        { label: 'Report Issue', href: '/support' },
+        { label: 'FAQs', href: '/support' },
       ]
     },
   ]
@@ -103,12 +120,21 @@ const Footer = () => {
               <ul className="space-y-3">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
-                    <a
-                      href={link.href}
-                      className="text-gray-400 hover:text-teal-400 transition duration-300 text-sm"
-                    >
-                      {link.label}
-                    </a>
+                    {link.hash ? (
+                      <button
+                        onClick={() => navigateToHash(link.hash)}
+                        className="text-left text-gray-400 hover:text-teal-400 transition duration-300 text-sm"
+                      >
+                        {link.label}
+                      </button>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className="text-gray-400 hover:text-teal-400 transition duration-300 text-sm"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -193,7 +219,6 @@ const Footer = () => {
               <h4 className="text-white font-semibold text-sm mb-3">24/7 Support</h4>
               <p className="text-gray-400 text-sm">
                 Emergency: +1 (555) 999-0000<br />
-                Live Chat: Available in app<br />
                 Email: support@diagnoops.com
               </p>
             </div>

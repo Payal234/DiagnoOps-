@@ -484,7 +484,6 @@ const html = `
       </td>
     </tr>
   </table>
-
 </div>
 `;
 
