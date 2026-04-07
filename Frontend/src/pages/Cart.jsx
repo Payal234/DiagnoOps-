@@ -44,6 +44,9 @@ const Cart = () => {
   // ✅ PAYMENT FUNCTION
   const handleCheckout = async () => {
     try {
+      const adminId = uniqueItems[0]?.adminId || null;
+      const adminAccountId = uniqueItems[0]?.adminAccountId || null;
+
       const res = await fetch("http://localhost:5000/api/payment/create-order", {
         method: "POST",
         headers: {
@@ -52,10 +55,19 @@ const Cart = () => {
         body: JSON.stringify({
           amount: finalTotal,
           items: uniqueItems,
+          adminId,
+          adminAccountId,
         }),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { error: await res.text() };
+
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Error creating order");
+      }
 
       const options = {
         key: data.key,
@@ -150,9 +162,9 @@ const Cart = () => {
           
           {/* LEFT */}
           <div className="flex-1 space-y-5">
-            {uniqueItems.map((item) => (
+            {uniqueItems.map((item, index) => (
               <div
-                key={item.id}
+                key={item.id ?? `${item.name}-${index}`}
                 className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition flex justify-between items-center"
               >
                 <div>

@@ -161,7 +161,7 @@ const LabTests = () => {
             <div className="mt-5 flex gap-2">
 
               <button
-                onClick={() => addToCart(item)}
+                onClick={() => addToCart({ ...item, adminId: labId })}
                 className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg text-sm cursor-pointer"
               >
                 <ShoppingCart size={16} />

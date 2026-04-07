@@ -3,6 +3,12 @@ import SuperAdmin from "../models/SuperAdmin.js";
 import bcrypt from "bcryptjs";
 import { sendEmail } from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
+import Razorpay from "razorpay";
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 export const loginLabAdmin = async (req, res) => {
   try {
@@ -359,10 +365,27 @@ export const updateLabAdminStatus = async (req, res) => {
     if (!lab) return res.status(404).json({ message: "Lab not found" });
 
     const previousStatus = lab.status;
+
+    // 🔥 WHEN APPROVING → CREATE RAZORPAY ACCOUNT
+    if (previousStatus !== "approved" && status === "approved") {
+
+      // 👉 Check if already exists
+      if (!lab.razorpayAccountId) {
+        const account = await razorpay.accounts.create({
+          email: lab.email,
+          phone: lab.mobile,
+          type: "route",
+          legal_business_name: lab.labName || "Lab Business",
+        });
+
+        lab.razorpayAccountId = account.id; // 🔥 SAVE ACCOUNT ID
+      }
+    }
+
     lab.status = status;
     await lab.save();
 
-    // Send email only on transition to approved
+    // ✅ EMAIL (same as your existing)
     if (previousStatus !== "approved" && status === "approved") {
       const adminPanelUrl = process.env.ADMIN_PANEL_URL || "http://localhost:5174";
       const base = adminPanelUrl.replace(/\/$/, "");
