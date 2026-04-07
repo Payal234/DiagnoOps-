@@ -21,6 +21,12 @@ const labAdminSchema = new mongoose.Schema(
     whyChooseUs: String,
     happyPatients: Number,
 
+      // 🔥 IMPORTANT FIELD
+    razorpayAccountId: {
+      type: String,
+      default: "",
+    },
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],

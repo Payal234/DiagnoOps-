@@ -76,6 +76,12 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [q, setQ] = useState("");
   const [loggedInLabAdmin, setLoggedInLabAdmin] = useState({ ownerName: "", name: "", labName: "" });
+  const [earnings, setEarnings] = useState({
+    totalAdminAmount: 0,
+    totalPlatformFee: 0,
+    orderCount: 0,
+    loading: true,
+  });
 
   useEffect(() => {
     try {
@@ -84,6 +90,32 @@ export default function Dashboard() {
     } catch {
       setLoggedInLabAdmin({ ownerName: "", name: "", labName: "" });
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("labAdmin") || "{}");
+        const adminId = stored?._id;
+        if (!adminId) {
+          setEarnings((prev) => ({ ...prev, loading: false }));
+          return;
+        }
+
+        const res = await fetch(`http://localhost:5000/api/payment/earnings/admin/${adminId}`);
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setEarnings({ ...data.earnings, loading: false });
+        } else {
+          setEarnings((prev) => ({ ...prev, loading: false }));
+        }
+      } catch (err) {
+        setEarnings((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchEarnings();
   }, []);
 
   const displayName = (loggedInLabAdmin.ownerName || loggedInLabAdmin.name || "Admin").trim();
@@ -129,6 +161,25 @@ export default function Dashboard() {
               <p className="text-sm text-slate-500 mt-1 font-medium">{k.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Earnings summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div className="text-sm text-slate-500">My confirmed earnings</div>
+            <div className="mt-3 text-3xl font-bold text-slate-900">₹{earnings.totalAdminAmount.toLocaleString()}</div>
+            <div className="mt-2 text-sm text-slate-500">From {earnings.orderCount} completed orders</div>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Platform fees collected</div>
+            <div className="mt-3 text-3xl font-bold text-slate-900">₹{earnings.totalPlatformFee.toLocaleString()}</div>
+            <div className="mt-2 text-sm text-slate-500">Paid to the platform</div>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Data status</div>
+            <div className="mt-3 text-3xl font-bold text-slate-900">{earnings.loading ? "Loading..." : "Updated"}</div>
+            <div className="mt-2 text-sm text-slate-500">Real earnings from payments</div>
+          </div>
         </div>
 
         {/* Main grid */}

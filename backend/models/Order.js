@@ -7,11 +7,23 @@ const orderSchema = new mongoose.Schema({
       name: String,
       price: Number,
       quantity: Number,
+      adminId: String,
+      adminAccountId: String,
     },
   ],
   amount: Number,
+
+  // 🔥 NEW FIELDS
+  platformFee: Number,
+  superAdminAmount: Number,
+  adminAmount: Number,
+  adminId: String,
+  adminAccountId: String,
+  superAdminAccountId: String,
+
   paymentId: String,
   orderId: String,
+
   status: {
     type: String,
     default: "pending",
