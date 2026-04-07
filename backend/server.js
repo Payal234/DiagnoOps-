@@ -7,6 +7,7 @@ import dns from "dns"
 import labtestRoutes from "./routes/labtestRoutes.js";
 import superAdminRoutes from "./routes/superAdminRoutes.js";
 import labAdminRoutes from "./routes/labAdminRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 
 dotenv.config();
@@ -27,6 +28,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/superadmin", superAdminRoutes);
 app.use("/api/tests", labtestRoutes);
 app.use("/api/labadmin", labAdminRoutes);
+
+// payment
+app.use("/api/payment",paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 
