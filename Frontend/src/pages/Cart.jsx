@@ -1,13 +1,15 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { CartContext } from "../context/CartContext";
 import { X, Plus, Minus } from "lucide-react";
 
 const Cart = () => {
-  const { cartItems, addToCart, removeFromCart, clearCart } = useContext(CartContext);
+  const { cartItems, addToCart, removeFromCart } = useContext(CartContext);
 
-  // consolidate any duplicates just in case the context array contains
-  // multiple entries for the same item id.  This guarantees items with a
-  // quantity >1 show once with a "+N" badge and prevents repeated rows.
+  // ✅ Payment status state
+  const [paymentStatus, setPaymentStatus] = useState(null); 
+  // "success" | "error" | null
+
+  // ✅ Merge duplicate items
   const uniqueItems = Object.values(
     cartItems.reduce((acc, item) => {
       if (acc[item.id]) {
@@ -19,58 +21,179 @@ const Cart = () => {
     }, {})
   );
 
+  // ✅ Price calculations
   const total = uniqueItems.reduce(
     (sum, item) => sum + Number(item.price || 0) * (item.quantity || 1),
     0
   );
 
+  const platformFee = 10;
+  const shippingFee = 5;
+  const finalTotal = total + platformFee + shippingFee;
+
+  // ✅ Auto hide message
+  useEffect(() => {
+    if (paymentStatus) {
+      const timer = setTimeout(() => {
+        setPaymentStatus(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStatus]);
+
+  // ✅ PAYMENT FUNCTION
+  const handleCheckout = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/payment/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: finalTotal,
+          items: uniqueItems,
+        }),
+      });
+
+      const data = await res.json();
+
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        order_id: data.order_id,
+
+        name: "My Store",
+        description: "Order Payment",
+
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch(
+              "http://localhost:5000/api/payment/verify-payment",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  ...response,
+                  dbOrderId: data.dbOrderId,
+                }),
+              }
+            );
+
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.success) {
+              setPaymentStatus("success");
+
+              // 👉 Optional: clear cart / redirect
+              // clearCart();
+              // setTimeout(() => (window.location.href = "/success"), 2000);
+
+            } else {
+              setPaymentStatus("error");
+            }
+
+          } catch (err) {
+            console.log(err);
+            setPaymentStatus("error");
+          }
+        },
+
+        prefill: {
+          name: "Test User",
+          email: "test@gmail.com",
+          contact: "9999999999",
+        },
+
+        theme: {
+          color: "#16a34a",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      console.log(err);
+      setPaymentStatus("error");
+    }
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Shopping Cart</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">
+        🛍️ Your Cart
+      </h1>
+
+      {/* ✅ SUCCESS / ERROR UI */}
+      {paymentStatus === "success" && (
+        <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-center font-medium">
+          ✅ Payment successful! Your order has been placed.
+        </div>
+      )}
+
+      {paymentStatus === "error" && (
+        <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-center font-medium">
+          ❌ Payment failed. Please try again.
+        </div>
+      )}
 
       {cartItems.length === 0 ? (
-        <p className="text-gray-500">Your cart is empty.</p>
+        <div className="bg-white p-10 rounded-2xl shadow text-center">
+          <p className="text-gray-500 text-lg">Your cart is empty.</p>
+        </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* items list */}
-          <div className="flex-1 space-y-4">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* LEFT */}
+          <div className="flex-1 space-y-5">
             {uniqueItems.map((item) => (
               <div
                 key={item.id}
-                className="flex justify-between items-center bg-white p-4 rounded-xl shadow"
+                className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition flex justify-between items-center"
               >
                 <div>
-                  <h2 className="font-semibold">
+                  <h2 className="font-semibold text-lg text-gray-800">
                     {item.name}
-                    {item.quantity && item.quantity > 1 && (
-                      <span className="ml-2 text-sm text-gray-500">
-                        +{item.quantity}
-                      </span>
-                    )}
                   </h2>
-                  <p className="text-sm text-gray-500">
-                    ₹{item.price * (item.quantity || 1)}
+
+                  <p className="text-sm text-gray-500 mt-1">
+                    ₹{item.price} × {item.quantity}
+                  </p>
+
+                  <p className="text-green-600 font-bold mt-1">
+                    ₹{item.price * item.quantity}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* CONTROLS */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center border rounded-full overflow-hidden">
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      className="px-3 py-1 hover:bg-gray-100"
+                    >
+                      <Minus size={14} />
+                    </button>
+
+                    <span className="px-3 font-medium">
+                      {item.quantity}
+                    </span>
+
+                    <button
+                      onClick={() => addToCart(item)}
+                      className="px-3 py-1 hover:bg-gray-100"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="p-2 rounded-full hover:bg-gray-200"
-                    title="Decrease quantity"
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <button
-                    onClick={() => addToCart(item)}
-                    className="p-2 rounded-full hover:bg-gray-200"
-                    title="Increase quantity"
-                  >
-                    <Plus size={16} />
-                  </button>
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="p-2 rounded-full hover:bg-gray-200"
-                    title="Remove"
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-full"
                   >
                     <X size={16} />
                   </button>
@@ -78,24 +201,58 @@ const Cart = () => {
               </div>
             ))}
 
+            {/* ✅ PAYMENT BUTTON */}
             <button
-              onClick={() => {
-                // placeholder action, e.g. navigate to checkout
-                alert('Proceeding to checkout...');
-              }}
-              className="mt-2 w-full py-2 bg-green-600 text-white rounded-lg"
+              onClick={handleCheckout}
+              className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold shadow hover:scale-[1.02] transition"
             >
-              Proceed
+              Proceed to Checkout
             </button>
           </div>
 
-          {/* summary sidebar */}
-          <aside className="w-full lg:w-64 p-4 bg-gray-100 rounded-xl shadow">
-            <h2 className="text-lg font-semibold mb-2">Order Summary</h2>
-            <p className="mb-1">
-              Items: {uniqueItems.reduce((sum, i) => sum + (i.quantity || 1), 0)}
-            </p>
-            <p className="font-bold text-xl">Total Payable: ₹{total.toFixed(2)}</p>
+          {/* RIGHT */}
+          <aside className="w-full lg:w-80">
+            <div className="bg-white p-6 rounded-2xl shadow-md sticky top-6">
+              <h2 className="text-xl font-semibold mb-5 text-gray-800">
+                Order Summary
+              </h2>
+
+              <div className="space-y-3 text-gray-600 text-sm">
+                <div className="flex justify-between">
+                  <span>Items</span>
+                  <span>
+                    {uniqueItems.reduce(
+                      (sum, i) => sum + (i.quantity || 1),
+                      0
+                    )}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>₹{total.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Platform Fee</span>
+                  <span>₹{platformFee.toFixed(2)}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span>₹{shippingFee.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="border-t my-4"></div>
+
+              <div className="flex justify-between text-lg font-bold text-gray-800">
+                <span>Total</span>
+                <span className="text-green-600">
+                  ₹{finalTotal.toFixed(2)}
+                </span>
+              </div>
+            </div>
           </aside>
         </div>
       )}
