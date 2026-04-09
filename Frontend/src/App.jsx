@@ -31,7 +31,7 @@ function App() {
           <Topbar />
 
           {/* Pages - allow page to scroll naturally */}
-          <div className="p-6 bg-gray-50 flex-grow">
+          <div className="p-6 bg-gray-50 flex-grow pt-20 lg:pt-6">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               {/* <Route path="/tests" element={<Tests />} /> */}

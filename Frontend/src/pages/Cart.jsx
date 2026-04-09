@@ -3,7 +3,8 @@ import { CartContext } from "../context/CartContext";
 import { X, Plus, Minus } from "lucide-react";
 
 const Cart = () => {
-  const { cartItems, addToCart, removeFromCart } = useContext(CartContext);
+  const { cartItems, addToCart, removeFromCart, clearCart } = useContext(CartContext);
+  const [user, setUser] = useState(null);
 
   // ✅ Payment status state
   const [paymentStatus, setPaymentStatus] = useState(null); 
@@ -33,6 +34,17 @@ const Cart = () => {
 
   // ✅ Auto hide message
   useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch (e) {
+        setUser({});
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (paymentStatus) {
       const timer = setTimeout(() => {
         setPaymentStatus(null);
@@ -44,6 +56,11 @@ const Cart = () => {
   // ✅ PAYMENT FUNCTION
   const handleCheckout = async () => {
     try {
+      if (!user?.userId && !user?._id) {
+        setPaymentStatus("error");
+        return;
+      }
+
       const adminId = uniqueItems[0]?.adminId || null;
       const adminAccountId = uniqueItems[0]?.adminAccountId || null;
 
@@ -57,6 +74,14 @@ const Cart = () => {
           items: uniqueItems,
           adminId,
           adminAccountId,
+          userId: user._id || user.userId,
+          userName: user.name,
+          userEmail: user.email,
+          userContact: user.phone || user.contact,
+          userAge: user.age,
+          userGender: user.gender,
+          userBloodGroup: user.bloodGroup,
+          userAllergies: user.allergies,
         }),
       });
 
@@ -98,11 +123,7 @@ const Cart = () => {
 
             if (verifyData.success) {
               setPaymentStatus("success");
-
-              // 👉 Optional: clear cart / redirect
-              // clearCart();
-              // setTimeout(() => (window.location.href = "/success"), 2000);
-
+              clearCart();
             } else {
               setPaymentStatus("error");
             }
@@ -188,7 +209,7 @@ const Cart = () => {
                       onClick={() => removeFromCart(item.id)}
                       className="px-3 py-1 hover:bg-gray-100"
                     >
-                      <Minus size={14} />
+                      <Minus size={14} className="cursor-pointer"/>
                     </button>
 
                     <span className="px-3 font-medium">
@@ -199,7 +220,7 @@ const Cart = () => {
                       onClick={() => addToCart(item)}
                       className="px-3 py-1 hover:bg-gray-100"
                     >
-                      <Plus size={14} />
+                      <Plus size={14} className="cursor-pointer"/>
                     </button>
                   </div>
 
@@ -207,19 +228,25 @@ const Cart = () => {
                     onClick={() => removeFromCart(item.id)}
                     className="p-2 text-red-500 hover:bg-red-50 rounded-full"
                   >
-                    <X size={16} />
+                    <X size={16} className="cursor-pointer"/>
                   </button>
                 </div>
               </div>
             ))}
 
             {/* ✅ PAYMENT BUTTON */}
-            <button
-              onClick={handleCheckout}
-              className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold shadow hover:scale-[1.02] transition"
-            >
-              Proceed to Checkout
-            </button>
+            {!user ? (
+              <div className="rounded-2xl bg-yellow-50 border border-yellow-200 p-4 text-yellow-700 font-medium">
+                Please login first to complete the booking.
+              </div>
+            ) : (
+              <button
+                onClick={handleCheckout}
+                className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold shadow hover:scale-[1.02] transition cursor-pointer"
+              >
+                Proceed to Checkout
+              </button>
+            )}
           </div>
 
           {/* RIGHT */}

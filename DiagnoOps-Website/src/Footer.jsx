@@ -230,7 +230,7 @@ const Footer = () => {
               &copy; 2026 DiagnoOps. All rights reserved.
             </p>
             <p className="text-gray-500 text-xs">
-              Designed with ❤️ for better healthcare
+              Designed and Developed by <span className="font-semibold text-cyan-400 hover:text-teal-600 cursor-pointer">Payal Ramkrishna Dhobale.</span>.
             </p>
           </div>
         </div>

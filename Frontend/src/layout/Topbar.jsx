@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ShoppingCart, Bell } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 
 const Topbar = () => {
@@ -21,7 +21,7 @@ const Topbar = () => {
   const currentTitle = pageTitles[location.pathname] || "Dashboard";
 
   return (
-    <div className="sticky top-0 z-20 w-full bg-gray-100 px-6 py-4 flex items-center justify-between border-b">
+    <div className="hidden lg:flex sticky top-0 z-20 w-full bg-gray-100 px-6 py-4 items-center justify-between border-b">
       
       {/* Left Side - Page Title */}
       <h1 className="text-xl font-semibold text-gray-700">
@@ -45,13 +45,6 @@ const Topbar = () => {
             </span>
           )}
         </div>
-
-        {/* Notification Icon */}
-        <Bell
-          size={22}
-          onClick={() => navigate("/notifications")}
-          className="cursor-pointer text-gray-600 hover:text-black"
-        />
 
       </div>
     </div>

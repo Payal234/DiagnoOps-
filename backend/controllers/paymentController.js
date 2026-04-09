@@ -13,7 +13,20 @@ const SUPER_ADMIN_ACCOUNT_ID = process.env.SUPER_ADMIN_ACCOUNT_ID || "";
 // ✅ CREATE ORDER CONTROLLER
 export const createOrder = async (req, res) => {
   try {
-    const { amount, items, adminId, adminAccountId } = req.body;
+    const {
+      amount,
+      items,
+      adminId,
+      adminAccountId,
+      userId,
+      userName,
+      userEmail,
+      userContact,
+      userAge,
+      userGender,
+      userBloodGroup,
+      userAllergies,
+    } = req.body;
 
     const platformFee = 10; // 👈 fix or dynamic
     const adminAmount = amount - platformFee;
@@ -51,6 +64,14 @@ export const createOrder = async (req, res) => {
     const newOrder = await Order.create({
       items,
       amount,
+      userId,
+      userName,
+      userEmail,
+      userContact,
+      userAge,
+      userGender,
+      userBloodGroup,
+      userAllergies,
       platformFee,
       superAdminAmount,
       adminAmount,
@@ -58,7 +79,7 @@ export const createOrder = async (req, res) => {
       adminAccountId,
       superAdminAccountId: SUPER_ADMIN_ACCOUNT_ID,
       orderId: order.id,
-      status: "pending",
+      bookingStatus: "Booked",
     });
 
     res.json({
@@ -83,7 +104,12 @@ export const getAdminEarnings = async (req, res) => {
     }
 
     const earnings = await Order.aggregate([
-      { $match: { adminId, status: "success" } },
+      {
+        $match: {
+          adminId,
+          $or: [{ paymentStatus: "success" }, { status: "success" }],
+        },
+      },
       {
         $group: {
           _id: null,
@@ -110,7 +136,7 @@ export const getAdminEarnings = async (req, res) => {
 export const getSuperAdminEarnings = async (req, res) => {
   try {
     const earnings = await Order.aggregate([
-      { $match: { status: "success" } },
+      { $match: { $or: [{ paymentStatus: "success" }, { status: "success" }] } },
       {
         $group: {
           _id: null,
@@ -131,6 +157,63 @@ export const getSuperAdminEarnings = async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Failed to fetch super admin earnings", details: err.message });
+  }
+};
+
+export const getOrdersByAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    if (!adminId) {
+      return res.status(400).json({ error: "adminId is required" });
+    }
+
+    const orders = await Order.find({
+      adminId,
+      $or: [{ paymentStatus: "success" }, { status: "success" }],
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Failed to fetch admin orders", details: err.message });
+  }
+};
+
+export const getOrdersByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    const orders = await Order.find({
+      userId,
+      $or: [{ paymentStatus: "success" }, { status: "success" }],
+    }).sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Failed to fetch user orders", details: err.message });
+  }
+};
+
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { bookingStatus } = req.body;
+
+    if (!orderId || !bookingStatus) {
+      return res.status(400).json({ error: "orderId and bookingStatus are required" });
+    }
+
+    const order = await Order.findByIdAndUpdate(orderId, { bookingStatus }, { new: true });
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Failed to update order status", details: err.message });
   }
 };
 
@@ -156,6 +239,7 @@ export const verifyPayment = async (req, res) => {
 
       await Order.findByIdAndUpdate(dbOrderId, {
         paymentId: razorpay_payment_id,
+        paymentStatus: "success",
         status: "success",
       });
 
