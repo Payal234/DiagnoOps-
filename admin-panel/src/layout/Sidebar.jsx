@@ -6,6 +6,7 @@ const navLinks = [
   { to: "/admin/dashboard", label: "Dashboard", icon: <FaThLarge size={15} /> },
   { to: "/admin/tests", label: "Manage Tests", icon: <FaClipboardList size={15} /> },
   { to: "/admin/profile", label: "Profile", icon: <FaUser size={15} /> },
+  { to: "/admin/patients", label: "Patients", icon: <FaUser size={15} /> }
 ];
 
 const Sidebar = () => {

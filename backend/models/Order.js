@@ -13,7 +13,15 @@ const orderSchema = new mongoose.Schema({
   ],
   amount: Number,
 
-  // 🔥 NEW FIELDS
+  userId: String,
+  userName: String,
+  userEmail: String,
+  userContact: String,
+  userAge: Number,
+  userGender: String,
+  userBloodGroup: String,
+  userAllergies: String,
+
   platformFee: Number,
   superAdminAmount: Number,
   adminAmount: Number,
@@ -24,9 +32,20 @@ const orderSchema = new mongoose.Schema({
   paymentId: String,
   orderId: String,
 
+  paymentStatus: {
+    type: String,
+    default: "pending",
+  },
+
+  // Backward-compat: some older code used `status`
   status: {
     type: String,
     default: "pending",
+  },
+
+  bookingStatus: {
+    type: String,
+    default: "Booked",
   },
 }, { timestamps: true });
 

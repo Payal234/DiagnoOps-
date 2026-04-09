@@ -5,6 +5,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Dashboard from "./pages/Dashboard";
 import ManageTests from "./pages/ManageTests";
 import Profile from "./pages/Profile";
+import Patients from "./pages/Patients";
 import "./App.css";
 
 const isAuthed = () => Boolean(localStorage.getItem("labAdminToken"));
@@ -47,6 +48,7 @@ const App = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="tests" element={<ManageTests />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="patients" element={<Patients/>}/>
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

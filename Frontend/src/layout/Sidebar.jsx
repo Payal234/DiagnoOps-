@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   LayoutDashboard,
   FlaskConical,
@@ -8,9 +8,11 @@ import {
   User,
   Menu,
   X,
-  LogOut
+  LogOut,
+  ShoppingCart
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CartContext } from "../context/CartContext";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -28,6 +30,7 @@ const Sidebar = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { cartItems } = useContext(CartContext);
 
   // Sync active menu with route
   useEffect(() => {
@@ -68,10 +71,24 @@ const Sidebar = () => {
           DiagnoOps
         </h1>
 
-        {/* Right Hamburger */}
-        <button onClick={() => setOpen(!open)} className="cursor-pointer">
-          {open ? <X size={26} /> : <Menu size={26} />}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/cart")}
+            className="relative p-2 rounded-lg hover:bg-slate-800 transition"
+            title="Cart"
+          >
+            <ShoppingCart size={22} className="text-white" />
+            {cartItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1 rounded-full">
+                {cartItems.length}
+              </span>
+            )}
+          </button>
+
+          <button onClick={() => setOpen(!open)} className="cursor-pointer p-2 rounded-lg hover:bg-slate-800 transition">
+            {open ? <X size={26} /> : <Menu size={26} />}
+          </button>
+        </div>
       </div>
 
       {/* ✅ Overlay (Mobile) */}
@@ -87,7 +104,7 @@ const Sidebar = () => {
         className={`fixed lg:sticky 
         top-16 lg:top-0 left-0
         h-[calc(100vh-64px)] lg:h-screen 
-        w-72 
+        w-[min(19rem,85vw)] 
         bg-[#0f172a] text-gray-300 
         flex flex-col
         transform transition-transform duration-300 z-40
