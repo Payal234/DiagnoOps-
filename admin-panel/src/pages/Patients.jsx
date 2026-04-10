@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const Patients = () => {
   const [patients, setPatients] = useState([]);
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const abortControllerRef = useRef(null);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
@@ -23,6 +24,15 @@ const Patients = () => {
       console.log("Admin ID missing");
       return;
     }
+
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
     setLoading(true);
     setError("");
@@ -45,88 +55,109 @@ const Patients = () => {
       headers["Authorization"] = `Bearer ${adminToken}`;
     }
 
-    // Fetch patients first
-    fetch(`${backendUrl}/api/patients`, { headers })
-      .then(async (res) => {
-        const contentType = res.headers.get("content-type") || "";
+    // Fetch patients and orders in parallel - ONE API call each
+    Promise.all([
+      fetch(`${backendUrl}/api/patients`, { headers, signal }),
+      fetch(`${backendUrl}/api/payment/orders/admin/${userId}`, { headers, signal }),
+    ])
+      .then(async (responses) => {
+        // Handle patients response
+        const patientRes = responses[0];
+        const contentType = patientRes.headers.get("content-type") || "";
 
         if (!contentType.includes("application/json")) {
-          const text = await res.text();
+          const text = await patientRes.text();
           throw new Error(
-            `Patient API did not return JSON (${res.status}). Received: ${text.slice(0, 80)}`
+            `Patient API did not return JSON (${patientRes.status}). Received: ${text.slice(0, 80)}`
           );
         }
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data?.message || "Failed to fetch patients");
+        const patientData = await patientRes.json();
+        if (!patientRes.ok) {
+          throw new Error(patientData?.message || "Failed to fetch patients");
         }
 
-        if (data?.success) {
-          setPatients(data.patients || []);
+        if (!patientData?.success) {
+          throw new Error(patientData?.message || "Failed to fetch patients");
+        }
+
+        const patientsFromAPI = patientData.patients || [];
+        setPatients(patientsFromAPI);
+        console.log("Patients loaded:", patientsFromAPI);
+
+        // Handle orders response
+        const ordersRes = responses[1];
+        const ordersContentType = ordersRes.headers.get("content-type") || "";
+
+        if (ordersContentType.includes("application/json")) {
+          const ordersData = await ordersRes.json();
+          console.log("Orders API Response:", ordersData);
           
-          // After getting patients, fetch their orders
-          if (data.patients && data.patients.length > 0) {
-            const orderFetches = data.patients.map((patient) => {
-              if (patient.orderId) {
-                return fetch(
-                  `${backendUrl}/api/payments/orders/admin/${userId}`,
-                  { headers }
-                )
-                  .then((res) => res.json())
-                  .catch((err) => {
-                    console.error("Error fetching orders:", err);
-                    return { success: false, orders: [] };
-                  });
-              }
-              return Promise.resolve({ success: false, orders: [] });
+          if (ordersData?.success && ordersData?.orders) {
+            const ordersFromAPI = ordersData.orders || [];
+            setOrders(ordersFromAPI);
+            console.log("Orders loaded:", ordersFromAPI);
+            
+            // Debug: Log matching for each patient
+            patientsFromAPI.forEach(patient => {
+              const matched = ordersFromAPI.filter(order => 
+                order.orderId === patient.orderId || 
+                order.userEmail === patient.email
+              );
+              console.log(`Patient ${patient.name} (${patient.email}, orderId: ${patient.orderId}):`, matched.length, "orders matched");
             });
-
-            return Promise.all(orderFetches);
+          } else {
+            setOrders([]);
+            console.log("No orders received");
           }
-          return [];
-        } else {
-          throw new Error(data?.message || "Failed to fetch patients");
         }
       })
-      .then((orderResponses) => {
-        // Flatten and merge all orders, removing duplicates by orderId
-        const allOrders = [];
-        const seenOrderIds = new Set();
-        
-        orderResponses.forEach((response) => {
-          if (response?.success && response?.orders) {
-            response.orders.forEach((order) => {
-              if (!seenOrderIds.has(order._id)) {
-                allOrders.push(order);
-                seenOrderIds.add(order._id);
-              }
-            });
-          }
-        });
-        
-        setOrders(allOrders);
+      .catch((err) => {
+        if (err.name === "AbortError") {
+          console.log("Fetch cancelled");
+        } else {
+          console.error("Error fetching data:", err);
+          setError(err.message || "Something went wrong");
+        }
       })
-      .catch((err) => setError(err.message || "Something went wrong"))
       .finally(() => setLoading(false));
-  }, [userId, backendUrl]);
+
+    // Cleanup function to cancel request on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [userId]);
 
   // Function to get tests booked by a patient
   const getPatientTests = (patient) => {
-    if (!patient) return [];
+    if (!patient || orders.length === 0) return [];
     
-    // Match by orderId first (most reliable)
+    console.log(`Matching tests for patient: ${patient.name} (email: ${patient.email}, orderId: ${patient.orderId})`);
+    
+    // First try: Match by orderId (Razorpay order ID)
     if (patient.orderId) {
-      const orderByIdMatch = orders.find(
-        (order) => order.orderId === patient.orderId || order._id === patient.orderId
+      const orderByIdMatches = orders.filter(
+        (order) => order?.orderId === patient.orderId
       );
-      if (orderByIdMatch) {
-        return [orderByIdMatch];
+      if (orderByIdMatches.length > 0) {
+        console.log(`Found ${orderByIdMatches.length} orders by orderId`);
+        return orderByIdMatches;
       }
     }
     
-    // Fallback: match by email
-    return orders.filter((order) => order.userEmail === patient.email);
+    // Second try: Match by email
+    const orderByEmailMatches = orders.filter(
+      (order) => order?.userEmail?.toLowerCase() === patient.email?.toLowerCase()
+    );
+    if (orderByEmailMatches.length > 0) {
+      console.log(`Found ${orderByEmailMatches.length} orders by email`);
+      return orderByEmailMatches;
+    }
+    
+    console.log("No orders found for this patient");
+    return [];
   };
 
   return (
