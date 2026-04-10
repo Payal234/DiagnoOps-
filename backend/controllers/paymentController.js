@@ -1,6 +1,7 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Order from "../models/Order.js";
+import { savePatientFromOrder } from "./patientController.js";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -237,11 +238,31 @@ export const verifyPayment = async (req, res) => {
 
     if (expectedSignature === razorpay_signature) {
 
-      await Order.findByIdAndUpdate(dbOrderId, {
+      const order = await Order.findByIdAndUpdate(dbOrderId, {
         paymentId: razorpay_payment_id,
         paymentStatus: "success",
         status: "success",
-      });
+      }, { new: true });
+
+      // 👤 Save patient from order data
+      if (order) {
+        try {
+          await savePatientFromOrder({
+            userName: order.userName,
+            userEmail: order.userEmail,
+            userContact: order.userContact,
+            userAge: order.userAge,
+            userGender: order.userGender,
+            userBloodGroup: order.userBloodGroup,
+            userAllergies: order.userAllergies,
+            adminId: order.adminId,
+            orderId: order.orderId,
+          });
+        } catch (patientErr) {
+          console.error("Error saving patient:", patientErr);
+          // Don't fail the payment if patient save fails
+        }
+      }
 
       res.json({ success: true });
 

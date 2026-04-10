@@ -15,10 +15,10 @@ const Patients = () => {
       return null;
     }
   })();
-  const adminId = adminData?._id;
+  const userId = adminData?._id;
 
   useEffect(() => {
-    if (!adminId) {
+    if (!userId) {
       console.log("Admin ID missing");
       return;
     }
@@ -26,7 +26,25 @@ const Patients = () => {
     setLoading(true);
     setError("");
 
-    fetch(`${backendUrl}/api/payment/orders/admin/${adminId}`)
+    // Get admin token for authentication
+    const adminToken = (() => {
+      try {
+        const raw = localStorage.getItem("adminToken");
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (adminToken) {
+      headers["Authorization"] = `Bearer ${adminToken}`;
+    }
+
+    fetch(`${backendUrl}/api/patients`, { headers })
       .then(async (res) => {
         const contentType = res.headers.get("content-type") || "";
 
@@ -39,19 +57,19 @@ const Patients = () => {
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data?.error || data?.message || "Failed to fetch patients");
+          throw new Error(data?.message || "Failed to fetch patients");
         }
 
         if (data?.success) {
-          setPatients(data.orders || []);
+          setPatients(data.patients || []);
           return;
         }
 
-        throw new Error(data?.error || data?.message || "Failed to fetch patients");
+        throw new Error(data?.message || "Failed to fetch patients");
       })
       .catch((err) => setError(err.message || "Something went wrong"))
       .finally(() => setLoading(false));
-  }, [adminId, backendUrl]);
+  }, [userId, backendUrl]);
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -69,71 +87,40 @@ const Patients = () => {
       )}
 
       {/* ✅ Data */}
-      {patients.map((order, index) => {
-        const user = {
-          name: order?.userName,
-          email: order?.userEmail,
-          contact: order?.userContact,
-          age: order?.userAge,
-          gender: order?.userGender,
-          bloodGroup: order?.userBloodGroup,
-          allergies: order?.userAllergies,
-        };
-
+      {patients.map((patient, index) => {
         return (
           <div
-            key={order?._id || index}
+            key={patient?._id || index}
             className="bg-white p-5 rounded-xl shadow mb-4"
           >
             {/* BASIC INFO */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">
-                {user?.name || "No Name"}
+                {patient?.name || "No Name"}
               </h2>
-              <span className="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-sm font-medium">
-                {order.bookingStatus || "Booked"}
+              <span className="rounded-full bg-blue-50 text-blue-700 px-3 py-1 text-sm font-medium">
+                Patient
               </span>
             </div>
 
-            <p>📧 {user?.email || "N/A"}</p>
-            <p>📞 {user?.contact || "N/A"}</p>
+            <p>📧 {patient?.email || "N/A"}</p>
+            <p>📞 {patient?.phone || "N/A"}</p>
+            <p>📍 {patient?.address || "N/A"}</p>
 
             {/* PROFILE */}
             <div className="mt-2 text-sm text-gray-600">
-              <p>Age: {user?.age || "N/A"}</p>
-              <p>Gender: {user?.gender || "N/A"}</p>
-              <p>Blood Group: {user?.bloodGroup || "N/A"}</p>
+              <p>Age: {patient?.age || "N/A"}</p>
+              <p>Gender: {patient?.gender || "N/A"}</p>
+              <p>Blood Group: {patient?.bloodGroup || "N/A"}</p>
               <p className="text-red-500 font-medium">
-                Allergies: {user?.allergies || "None"}
+                Allergies: {patient?.allergies || "None"}
               </p>
             </div>
 
-            {/* TESTS */}
-            <div className="mt-3">
-              <p className="font-medium">Tests:</p>
-              <ul className="list-disc ml-5">
-                {order?.items?.length > 0 ? (
-                  order.items.map((item, i) => (
-                    <li key={i}>{item?.name}</li>
-                  ))
-                ) : (
-                  <li>No tests</li>
-                )}
-              </ul>
-            </div>
-
-            {/* PAYMENT */}
-            <div className="mt-3 flex justify-between">
-              <span>Total:</span>
-              <span className="text-green-600 font-bold">
-                ₹{order?.amount || 0}
-              </span>
-            </div>
-
-            {/* DATE */}
+            {/* CREATED DATE */}
             <p className="text-xs text-gray-400 mt-2">
-              {order?.createdAt
-                ? new Date(order.createdAt).toLocaleString()
+              {patient?.createdAt
+                ? new Date(patient.createdAt).toLocaleString()
                 : "No date"}
             </p>
           </div>

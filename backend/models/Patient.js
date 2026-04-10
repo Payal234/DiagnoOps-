@@ -9,7 +9,9 @@ const patientSchema = new mongoose.Schema({
   bloodGroup: String,
   gender: String,
   age: Number,
-  allergies: String
-});
+  allergies: String,
+  labAdminId: String, // Link to which lab this patient belongs to
+  orderId: String,    // Reference to the order
+}, { timestamps: true });
 
 export default mongoose.model("Patient", patientSchema);

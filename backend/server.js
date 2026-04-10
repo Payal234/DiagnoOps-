@@ -8,6 +8,7 @@ import labtestRoutes from "./routes/labtestRoutes.js";
 import superAdminRoutes from "./routes/superAdminRoutes.js";
 import labAdminRoutes from "./routes/labAdminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import patientRoutes from "./routes/patientRoutes.js";
 
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/superadmin", superAdminRoutes);
 app.use("/api/tests", labtestRoutes);
 app.use("/api/labadmin", labAdminRoutes);
+app.use("/api/patients", patientRoutes);
 
 // payment
 app.use("/api/payment",paymentRoutes);
