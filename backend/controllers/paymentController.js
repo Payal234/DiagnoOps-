@@ -1,6 +1,7 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Order from "../models/Order.js";
+import LabAdmin from "../models/LabAdmin.js";
 import { savePatientFromOrder } from "./patientController.js";
 
 const razorpay = new Razorpay({
@@ -29,14 +30,45 @@ export const createOrder = async (req, res) => {
       userAllergies,
     } = req.body;
 
+    // Resolve lab admin details.
+    // Frontend currently sends adminId as labName (route param). We support both:
+    // - Mongo ObjectId string (lab admin _id)
+    // - labName string
+    const normalizedItems = Array.isArray(items) ? items : [];
+    const candidateAdminRef =
+      (adminId !== undefined && adminId !== null ? String(adminId) : "").trim() ||
+      String(normalizedItems?.[0]?.adminId || "").trim() ||
+      String(normalizedItems?.[0]?.lab || "").trim();
+
+    const looksLikeObjectId = (v) => /^[a-f\d]{24}$/i.test(String(v || "").trim());
+
+    let resolvedAdminId = looksLikeObjectId(candidateAdminRef) ? candidateAdminRef : "";
+    let resolvedAdminAccountId = (adminAccountId ? String(adminAccountId) : "").trim();
+    let resolvedLabName = "";
+
+    if (!resolvedAdminId && candidateAdminRef) {
+      // Treat candidateAdminRef as labName
+      const lab = await LabAdmin.findOne({ labName: candidateAdminRef }).select("_id labName razorpayAccountId");
+      if (lab) {
+        resolvedAdminId = String(lab._id);
+        resolvedLabName = lab.labName || "";
+        if (!resolvedAdminAccountId) resolvedAdminAccountId = lab.razorpayAccountId || "";
+      }
+    }
+
+    if (!resolvedAdminId && candidateAdminRef) {
+      // If we still can't resolve, save what we got for debugging but avoid crashing.
+      resolvedLabName = candidateAdminRef;
+    }
+
     const platformFee = 10; // 👈 fix or dynamic
     const adminAmount = amount - platformFee;
     const superAdminAmount = platformFee;
 
     const transfers = [];
-    if (adminAccountId) {
+    if (resolvedAdminAccountId) {
       transfers.push({
-        account: adminAccountId,
+        account: resolvedAdminAccountId,
         amount: adminAmount * 100,
         currency: "INR",
         notes: { role: "admin" },
@@ -63,7 +95,12 @@ export const createOrder = async (req, res) => {
 
     // ✅ Save in DB
     const newOrder = await Order.create({
-      items,
+      items: normalizedItems.map((it) => ({
+        ...it,
+        // Keep item-level fields consistent for reporting
+        adminId: resolvedAdminId || it?.adminId || resolvedLabName || "",
+        adminAccountId: it?.adminAccountId ?? resolvedAdminAccountId,
+      })),
       amount,
       userId,
       userName,
@@ -76,8 +113,8 @@ export const createOrder = async (req, res) => {
       platformFee,
       superAdminAmount,
       adminAmount,
-      adminId,
-      adminAccountId,
+      adminId: resolvedAdminId || (resolvedLabName || adminId || ""),
+      adminAccountId: resolvedAdminAccountId || adminAccountId,
       superAdminAccountId: SUPER_ADMIN_ACCOUNT_ID,
       orderId: order.id,
       bookingStatus: "Booked",
@@ -179,6 +216,55 @@ export const getOrdersByAdmin = async (req, res) => {
   }
 };
 
+// ✅ Get orders for currently logged-in lab admin (token-based)
+export const getOrdersForLabAdminMe = async (req, res) => {
+  try {
+    if (req.user?.role !== "labadmin") {
+      return res.status(403).json({ success: false, message: "Access denied." });
+    }
+
+    const labAdminId = req.user.id;
+    if (!labAdminId) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+
+    const me = await LabAdmin.findById(labAdminId).select("labName");
+    const myLabName = (me?.labName || "").trim();
+
+    const rawOrders = await Order.find({
+      $or: [
+        { adminId: labAdminId },
+        { "items.adminId": labAdminId },
+        // Backward-compat: older orders stored adminId/items.adminId as labName
+        ...(myLabName ? [{ adminId: myLabName }, { "items.adminId": myLabName }] : []),
+      ],
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const orders = rawOrders.map((o) => {
+      const items = Array.isArray(o.items)
+        ? o.items.filter(
+            (it) =>
+              !it?.adminId ||
+              String(it.adminId) === String(labAdminId) ||
+              (myLabName && String(it.adminId) === String(myLabName))
+          )
+        : [];
+
+      return {
+        ...o,
+        items,
+      };
+    });
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: "Failed to fetch orders", details: err.message });
+  }
+};
+
 export const getOrdersByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -202,11 +288,46 @@ export const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { bookingStatus } = req.body;
 
+    const ALLOWED_BOOKING_STEPS = [
+      "Booked",
+      "Sample Collected",
+      "Processing",
+      "Report Ready",
+      "Approved",
+      "booking Confirm",
+      "Rejected",
+    ];
+
     if (!orderId || !bookingStatus) {
       return res.status(400).json({ error: "orderId and bookingStatus are required" });
     }
 
-    const order = await Order.findByIdAndUpdate(orderId, { bookingStatus }, { new: true });
+    if (!ALLOWED_BOOKING_STEPS.includes(String(bookingStatus))) {
+      return res.status(400).json({ error: "Invalid bookingStatus" });
+    }
+
+    // AuthZ: labadmin can update only their own orders.
+    // (Superadmin/admin support can be added later if needed.)
+    if (req.user?.role !== "labadmin") {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const labAdminId = req.user?.id;
+    const me = await LabAdmin.findById(labAdminId).select("labName");
+    const myLabName = (me?.labName || "").trim();
+
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: orderId,
+        $or: [
+          { adminId: labAdminId },
+          { "items.adminId": labAdminId },
+          ...(myLabName ? [{ adminId: myLabName }, { "items.adminId": myLabName }] : []),
+        ],
+      },
+      { bookingStatus },
+      { new: true }
+    );
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -257,6 +378,11 @@ export const verifyPayment = async (req, res) => {
             userAllergies: order.userAllergies,
             adminId: order.adminId,
             orderId: order.orderId,
+            dbOrderId: order._id,
+            items: order.items,
+            paymentStatus: order.paymentStatus || order.status,
+            bookingStatus: order.bookingStatus,
+            bookedAt: order.createdAt,
           });
         } catch (patientErr) {
           console.error("Error saving patient:", patientErr);

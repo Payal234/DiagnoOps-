@@ -4,7 +4,7 @@ import { FaBars ,FaTimes, FaThLarge, FaClipboardList, FaUsers, FaCog, FaSignOutA
 
 const navLinks = [
   { to: "/dashboard", label: "Dashboard", icon: <FaThLarge size={15} /> },
-  { to: "/lab", label: "Manage Lab", icon: <FaClipboardList size={15} /> },
+  { to: "/lab", label: "Lab Application", icon: <FaClipboardList size={15} /> },
   
 ];
 
