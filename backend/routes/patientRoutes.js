@@ -13,10 +13,10 @@ const router = express.Router();
 
 // Public routes
 router.post("/register", registerPatient);
-router.get("/", getAllPatients); // Get all patients - for admin
+router.get("/",  verifyToken, getAllPatients); // Get all patients - for admin
 
 // Public: Get patients by specific lab (must be before /:id route)
-router.get("/by-lab/:labAdminId", getPatientsByLab);
+router.get("/by-lab",verifyToken , getPatientsByLab);
 
 // Protected routes (require authentication)
 router.get("/:id", verifyToken, getPatientById);

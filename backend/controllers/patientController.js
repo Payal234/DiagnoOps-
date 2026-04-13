@@ -14,6 +14,11 @@ export const savePatientFromOrder = async (orderData) => {
       userAllergies,
       adminId,
       orderId,
+      dbOrderId,
+      items,
+      paymentStatus,
+      bookingStatus,
+      bookedAt,
     } = orderData;
 
     // Check if patient already exists with same email
@@ -23,6 +28,23 @@ export const savePatientFromOrder = async (orderData) => {
       // Update existing patient with lab info
       existingPatient.labAdminId = adminId;
       existingPatient.orderId = orderId;
+
+      existingPatient.lastBooking = {
+        dbOrderId: dbOrderId || existingPatient.lastBooking?.dbOrderId,
+        orderId,
+        items: Array.isArray(items)
+          ? items.map((it) => ({
+              id: it?.id,
+              name: it?.name,
+              price: it?.price,
+              quantity: it?.quantity,
+            }))
+          : existingPatient.lastBooking?.items || [],
+        paymentStatus: paymentStatus || existingPatient.lastBooking?.paymentStatus,
+        bookingStatus: bookingStatus || existingPatient.lastBooking?.bookingStatus,
+        bookedAt: bookedAt || existingPatient.lastBooking?.bookedAt,
+      };
+
       await existingPatient.save();
       return existingPatient;
     }
@@ -38,6 +60,22 @@ export const savePatientFromOrder = async (orderData) => {
       allergies: userAllergies,
       labAdminId: adminId,
       orderId: orderId,
+
+      lastBooking: {
+        dbOrderId,
+        orderId,
+        items: Array.isArray(items)
+          ? items.map((it) => ({
+              id: it?.id,
+              name: it?.name,
+              price: it?.price,
+              quantity: it?.quantity,
+            }))
+          : [],
+        paymentStatus,
+        bookingStatus,
+        bookedAt,
+      },
     });
 
     await newPatient.save();
@@ -77,13 +115,12 @@ export const getPatientById = async (req, res) => {
 // Get patients by lab admin
 export const getPatientsByLab = async (req, res) => {
   try {
-    const { labAdminId } = req.params;
+    // ✅ Token se labId lo (secure)
+    const labAdminId = req.user.id;
 
-    if (!labAdminId) {
-      return res.status(400).json({ success: false, message: "Lab Admin ID is required" });
-    }
-
-    const patients = await Patient.find({ labAdminId }).select("-password").sort({ createdAt: -1 });
+    const patients = await Patient.find({ labAdminId })
+      .select("-password")
+      .sort({ createdAt: -1 });
 
     res.json({ success: true, patients });
   } catch (error) {

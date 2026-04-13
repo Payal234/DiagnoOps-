@@ -48,6 +48,7 @@ const AdminLogin = () => {
 
 			if (res.data?.success) {
 				localStorage.setItem("labAdminToken", res.data.token);
+				localStorage.setItem("adminToken", res.data.token);
 				localStorage.setItem("labAdmin", JSON.stringify(res.data.labAdmin || {}));
 				navigate("/admin/dashboard", { replace: true });
 			} else {
