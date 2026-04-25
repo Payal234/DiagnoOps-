@@ -8,6 +8,7 @@ export const savePatientFromOrder = async (orderData) => {
       userName,
       userEmail,
       userContact,
+      userAddress,
       userAge,
       userGender,
       userBloodGroup,
@@ -28,6 +29,10 @@ export const savePatientFromOrder = async (orderData) => {
       // Update existing patient with lab info
       existingPatient.labAdminId = adminId;
       existingPatient.orderId = orderId;
+
+      if (userAddress) {
+        existingPatient.address = userAddress;
+      }
 
       existingPatient.lastBooking = {
         dbOrderId: dbOrderId || existingPatient.lastBooking?.dbOrderId,
@@ -53,6 +58,7 @@ export const savePatientFromOrder = async (orderData) => {
     const newPatient = new Patient({
       name: userName,
       email: userEmail,
+      address: userAddress,
       phone: userContact,
       age: userAge,
       gender: userGender,

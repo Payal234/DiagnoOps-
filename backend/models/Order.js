@@ -17,6 +17,7 @@ const orderSchema = new mongoose.Schema({
   userName: String,
   userEmail: String,
   userContact: String,
+  userAddress: String,
   userAge: Number,
   userGender: String,
   userBloodGroup: String,

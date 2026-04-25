@@ -78,6 +78,7 @@ const Cart = () => {
           userName: user.name,
           userEmail: user.email,
           userContact: user.phone || user.contact,
+          userAddress: user.address,
           userAge: user.age,
           userGender: user.gender,
           userBloodGroup: user.bloodGroup,

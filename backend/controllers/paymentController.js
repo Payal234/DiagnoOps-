@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Order from "../models/Order.js";
 import LabAdmin from "../models/LabAdmin.js";
+import UserProfile from "../models/UserProfile.js";
 import { savePatientFromOrder } from "./patientController.js";
 
 const razorpay = new Razorpay({
@@ -24,11 +25,60 @@ export const createOrder = async (req, res) => {
       userName,
       userEmail,
       userContact,
+      userAddress,
       userAge,
       userGender,
       userBloodGroup,
       userAllergies,
     } = req.body;
+
+    // Backfill missing user fields from user profile (so location can still show
+    // even if the frontend didn't send it).
+    let resolvedUserName = userName;
+    let resolvedUserEmail = userEmail;
+    let resolvedUserContact = userContact;
+    let resolvedUserAddress = userAddress;
+    let resolvedUserAge = userAge;
+    let resolvedUserGender = userGender;
+    let resolvedUserBloodGroup = userBloodGroup;
+    let resolvedUserAllergies = userAllergies;
+
+    const needsUserBackfill =
+      (!resolvedUserAddress || !resolvedUserContact || !resolvedUserName || !resolvedUserEmail);
+
+    if (needsUserBackfill) {
+      try {
+        const looksLikeObjectId = (v) => /^[a-f\d]{24}$/i.test(String(v || "").trim());
+        const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+        let profile = null;
+        if (userId && looksLikeObjectId(userId)) {
+          profile = await UserProfile.findById(String(userId)).select(
+            "name email phone address age gender bloodGroup allergies"
+          );
+        }
+
+        if (!profile && resolvedUserEmail) {
+          const email = String(resolvedUserEmail).trim();
+          profile = await UserProfile.findOne({ email: { $regex: `^${escapeRegExp(email)}$`, $options: "i" } }).select(
+            "name email phone address age gender bloodGroup allergies"
+          );
+        }
+
+        if (profile) {
+          if (!resolvedUserName) resolvedUserName = profile.name;
+          if (!resolvedUserEmail) resolvedUserEmail = profile.email;
+          if (!resolvedUserContact) resolvedUserContact = profile.phone;
+          if (!resolvedUserAddress) resolvedUserAddress = profile.address;
+          if (!resolvedUserAge && profile.age !== undefined) resolvedUserAge = profile.age;
+          if (!resolvedUserGender) resolvedUserGender = profile.gender;
+          if (!resolvedUserBloodGroup) resolvedUserBloodGroup = profile.bloodGroup;
+          if (!resolvedUserAllergies) resolvedUserAllergies = profile.allergies;
+        }
+      } catch (e) {
+        // Ignore profile lookup failures; order can still be created.
+      }
+    }
 
     // Resolve lab admin details.
     // Frontend currently sends adminId as labName (route param). We support both:
@@ -103,13 +153,14 @@ export const createOrder = async (req, res) => {
       })),
       amount,
       userId,
-      userName,
-      userEmail,
-      userContact,
-      userAge,
-      userGender,
-      userBloodGroup,
-      userAllergies,
+      userName: resolvedUserName,
+      userEmail: resolvedUserEmail,
+      userContact: resolvedUserContact,
+      userAddress: resolvedUserAddress,
+      userAge: resolvedUserAge,
+      userGender: resolvedUserGender,
+      userBloodGroup: resolvedUserBloodGroup,
+      userAllergies: resolvedUserAllergies,
       platformFee,
       superAdminAmount,
       adminAmount,
@@ -242,6 +293,61 @@ export const getOrdersForLabAdminMe = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    // Backfill missing userAddress for older orders from user profiles
+    const looksLikeObjectId = (v) => /^[a-f\d]{24}$/i.test(String(v || "").trim());
+    const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const missingAddressOrderRows = rawOrders.filter((o) => !o?.userAddress);
+
+    const missingAddressUserIds = Array.from(
+      new Set(
+        missingAddressOrderRows
+          .map((o) => String(o?.userId || "").trim())
+          .filter((id) => id && looksLikeObjectId(id))
+      )
+    );
+
+    const missingAddressEmails = Array.from(
+      new Set(
+        missingAddressOrderRows
+          .map((o) => String(o?.userEmail || "").trim())
+          .filter(Boolean)
+      )
+    );
+
+    let addressByUserId = {};
+    let addressByEmail = {};
+    if (missingAddressUserIds.length || missingAddressEmails.length) {
+      try {
+        const emailRegexes = missingAddressEmails.map(
+          (email) => new RegExp(`^${escapeRegExp(email)}$`, "i")
+        );
+
+        const profiles = await UserProfile.find({
+          $or: [
+            ...(missingAddressUserIds.length ? [{ _id: { $in: missingAddressUserIds } }] : []),
+            ...(emailRegexes.length ? [{ email: { $in: emailRegexes } }] : []),
+          ],
+        })
+          .select("_id email address")
+          .lean();
+
+        addressByUserId = (profiles || []).reduce((acc, p) => {
+          acc[String(p._id)] = p.address || "";
+          return acc;
+        }, {});
+
+        addressByEmail = (profiles || []).reduce((acc, p) => {
+          const email = String(p.email || "").trim().toLowerCase();
+          if (email) acc[email] = p.address || "";
+          return acc;
+        }, {});
+      } catch (e) {
+        addressByUserId = {};
+        addressByEmail = {};
+      }
+    }
+
     const orders = rawOrders.map((o) => {
       const items = Array.isArray(o.items)
         ? o.items.filter(
@@ -252,9 +358,16 @@ export const getOrdersForLabAdminMe = async (req, res) => {
           )
         : [];
 
+      const backfilledUserAddress =
+        o.userAddress ||
+        (o.userId ? addressByUserId[String(o.userId)] : "") ||
+        (o.userEmail ? addressByEmail[String(o.userEmail).trim().toLowerCase()] : "") ||
+        "";
+
       return {
         ...o,
         items,
+        userAddress: backfilledUserAddress,
       };
     });
 
@@ -372,6 +485,7 @@ export const verifyPayment = async (req, res) => {
             userName: order.userName,
             userEmail: order.userEmail,
             userContact: order.userContact,
+            userAddress: order.userAddress,
             userAge: order.userAge,
             userGender: order.userGender,
             userBloodGroup: order.userBloodGroup,

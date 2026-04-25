@@ -32,6 +32,7 @@ const Patients = () => {
   const [loading, setLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState("");
   const [expandedPatient, setExpandedPatient] = useState(null);
+  const [view, setView] = useState("patients");
   const abortControllerRef = useRef(null);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -101,6 +102,7 @@ const Patients = () => {
       email: latest.userEmail || email,
       name: latest.userName || "Unknown",
       phone: latest.userContact || "N/A",
+      location: latest.userAddress || latest.userLocation || "",
       age: latest.userAge,
       gender: latest.userGender,
       bloodGroup: latest.userBloodGroup,
@@ -109,6 +111,10 @@ const Patients = () => {
       colorIdx: idx % AVATAR_COLORS.length,
     };
   });
+
+  const approvedOrders = orders
+    .filter((o) => o?.bookingStatus === "Approved")
+    .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -127,11 +133,37 @@ const Patients = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-full">
+            <button
+              type="button"
+              onClick={() => {
+                setView("patients");
+                setExpandedPatient(null);
+              }}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full transition ${view === "patients" ? "bg-white text-slate-800 border border-slate-200" : "text-slate-600 hover:text-slate-800"}`}
+            >
+              Patients
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setView("history");
+                setExpandedPatient(null);
+              }}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full transition ${view === "history" ? "bg-white text-slate-800 border border-slate-200" : "text-slate-600 hover:text-slate-800"}`}
+            >
+              History
+            </button>
+          </div>
+
           <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full font-medium">
             {patientGroups.length} Total Patients
           </span>
           <span className="text-xs text-cyan-700 bg-cyan-50 border border-cyan-100 px-3 py-1.5 rounded-full font-semibold">
             {orders.length} Orders
+          </span>
+          <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full font-semibold">
+            {approvedOrders.length} Approved
           </span>
         </div>
       </div>
@@ -170,22 +202,110 @@ const Patients = () => {
           </div>
         )}
 
-        {/* Patient List */}
-        <div className="space-y-4">
+        {view === "history" ? (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 px-5 py-4 shadow-sm">
+              <h2 className="text-base font-bold text-slate-800">Approved Order History</h2>
+              <p className="text-xs text-slate-400 mt-1">All orders with booking status “Approved”.</p>
+            </div>
+
+            {approvedOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-slate-200 px-5 py-10 text-center text-slate-400 shadow-sm">
+                No approved orders yet.
+              </div>
+            ) : (
+              approvedOrders.map((order, i) => {
+                const isPaid = order.paymentStatus === "success" || order.status === "success";
+                return (
+                  <div key={order._id || i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-800 truncate">
+                          {order.userName || order.userEmail || "Unknown"}
+                        </p>
+                        <p className="text-xs text-slate-400 truncate">{order.userEmail || "—"}</p>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="text-xs text-slate-400">{order.userContact || "N/A"}</span>
+                          {order.userAddress ? (
+                            <span title={order.userAddress} className="text-xs text-slate-400 max-w-[28rem] truncate">
+                              {order.userAddress}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-300">Location N/A</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-100">
+                          Approved
+                        </span>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPaid ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                          {isPaid ? "Paid" : "Pending"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="px-5 py-4">
+                      <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
+                        <span>Order #{order.orderId?.slice(-6) || "------"}</span>
+                        <span>
+                          {order.createdAt
+                            ? new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                            : "—"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {(order.items || []).map((test, idx) => (
+                          <div key={idx} className="flex items-center justify-between py-1.5 border-b border-dashed border-slate-100 last:border-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
+                              <span className="text-sm text-slate-600 truncate">{test.name}</span>
+                              {test.quantity && (
+                                <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">×{test.quantity}</span>
+                              )}
+                            </div>
+                            <span className="text-sm font-semibold text-slate-700 flex-shrink-0">₹{test.price}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        ) : (
+          /* Patient List */
+          <div className="space-y-4">
           {patientGroups.map((patient) => {
             const initials = patient.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
             const ac = AVATAR_COLORS[patient.colorIdx];
             const isExpanded = expandedPatient === patient.key;
-            const latestStatus = patient.orders[0]?.bookingStatus || "Booked";
-            const allPaid = patient.orders.every(o => o.paymentStatus === "success" || o.status === "success");
+            const activeOrders = patient.orders.filter((o) => o?.bookingStatus !== "Approved");
+            const latestStatus = activeOrders[0]?.bookingStatus || "—";
+            const allPaid = activeOrders.length
+              ? activeOrders.every((o) => o.paymentStatus === "success" || o.status === "success")
+              : true;
 
             return (
               <div key={patient.key} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
 
                 {/* Patient Row — clickable */}
-                <button
-                  className="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors"
-                  onClick={() => setExpandedPatient(isExpanded ? null : patient.key)}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="w-full text-left px-5 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setExpandedPatient(isExpanded ? null : patient.key);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setExpandedPatient(isExpanded ? null : patient.key);
+                    }
+                  }}
                 >
                   {/* Avatar */}
                   <div className={`w-11 h-11 rounded-full ${ac.bg} ${ac.text} border ${ac.border} flex items-center justify-center font-bold text-sm flex-shrink-0`}>
@@ -208,6 +328,13 @@ const Patients = () => {
                       <span className="text-xs text-slate-400">{patient.phone}</span>
                       {patient.age && <span className="text-xs text-slate-400">Age {patient.age}</span>}
                       {patient.gender && <span className="text-xs text-slate-400">{patient.gender}</span>}
+                      {patient.location ? (
+                        <span title={patient.location} className="text-xs text-slate-400 max-w-[18rem] truncate">
+                          {patient.location}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-300">Location N/A</span>
+                      )}
                     </div>
                   </div>
 
@@ -215,8 +342,9 @@ const Patients = () => {
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right hidden sm:block">
                       <p className="text-xs text-slate-400">Orders</p>
-                      <p className="text-sm font-bold text-slate-700">{patient.orders.length}</p>
+                      <p className="text-sm font-bold text-slate-700">{activeOrders.length}</p>
                     </div>
+
                     <div className="text-right hidden sm:block">
                       <p className="text-xs text-slate-400">Payment</p>
                       <span className={`text-xs font-semibold ${allPaid ? "text-emerald-600" : "text-amber-600"}`}>
@@ -232,18 +360,19 @@ const Patients = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                </button>
+                </div>
 
                 {/* Expanded Orders */}
                 {isExpanded && (
                   <div className="border-t border-slate-100 bg-slate-50 px-5 py-4">
 
                     {/* Patient detail strip */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
                       {[
                         { label: "Age", value: patient.age ?? "N/A" },
                         { label: "Gender", value: patient.gender || "N/A" },
                         { label: "Blood Group", value: patient.bloodGroup || "N/A" },
+                        { label: "Location", value: patient.location || "N/A" },
                         { label: "Allergies", value: patient.allergies || "None" },
                       ].map((item) => (
                         <div key={item.label} className="bg-white rounded-xl border border-slate-200 px-3 py-2.5">
@@ -255,10 +384,8 @@ const Patients = () => {
                       ))}
                     </div>
 
-                    <p className="text-xl font-bold text-slate-500 uppercase tracking-wider mb-3">Orders</p>
-
                     <div className="space-y-3">
-                      {patient.orders.map((order, i) => {
+                      {activeOrders.map((order, i) => {
                         const isPaid = order.paymentStatus === "success" || order.status === "success";
                         const statusIndex = Math.max(0, BOOKING_STEPS.indexOf(order.bookingStatus) >= 0 ? BOOKING_STEPS.indexOf(order.bookingStatus) : 0);
 
@@ -379,6 +506,12 @@ const Patients = () => {
                           </div>
                         );
                       })}
+
+                      {activeOrders.length === 0 && (
+                        <div className="bg-white rounded-xl border border-slate-200 px-4 py-6 text-center text-slate-400">
+                          No active orders. Approved orders are available in History.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -386,6 +519,7 @@ const Patients = () => {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

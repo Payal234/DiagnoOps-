@@ -290,14 +290,14 @@ const Login = () => {
           </div> */}
 
           {/* Register Link */}
-          {/* <div className="mt-6">
+          <div className="mt-6">
             <Link
               to="/register"
               className="w-full flex justify-center py-3 px-4 border-2 border-blue-600 rounded-lg text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
             >
               Create Super Admin Account
             </Link>
-          </div> */}
+          </div>
           </div>
 
         {/* Security Notice */}
