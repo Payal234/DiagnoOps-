@@ -20,7 +20,7 @@ export default function RegisterPage() {
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
   const userDashboardUrl =
-    import.meta.env.VITE_USER_DASHBOARD_URL || "http://localhost:5174/";
+    import.meta.env.VITE_USER_DASHBOARD_URL || "https://diagnoops-user.vercel.app/";
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
