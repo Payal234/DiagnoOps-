@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes.js";
-// import dns from "dns"
+import dns from "dns"
 import labtestRoutes from "./routes/labtestRoutes.js";
 import superAdminRoutes from "./routes/superAdminRoutes.js";
 import labAdminRoutes from "./routes/labAdminRoutes.js";
@@ -12,7 +12,7 @@ import patientRoutes from "./routes/patientRoutes.js";
 
 
 dotenv.config();
-// dns.setServers(["8.8.8.8", "1.1.1.1"]);
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const app = express();
 
 app.use(cors());

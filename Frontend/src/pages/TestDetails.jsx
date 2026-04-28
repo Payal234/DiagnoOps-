@@ -13,7 +13,7 @@ const TestDetails = () => {
     const fetchTest = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:5000/api/tests/${id}`);
+        const res = await fetch(`https://diagnoops-backend.vercel.app/api/tests/${id}`);
         if (!res.ok) {
           throw new Error("Failed to fetch test details");
         }

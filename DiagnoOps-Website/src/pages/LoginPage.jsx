@@ -8,9 +8,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState("");
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
   const userDashboardUrl =
-    import.meta.env.VITE_USER_DASHBOARD_URL || "http://localhost:5174/";
+    import.meta.env.VITE_USER_DASHBOARD_URL || "https://diagnoops-user.vercel.app";
 
   const handleLogin = async (e) => {
     e.preventDefault();

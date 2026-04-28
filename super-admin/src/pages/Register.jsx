@@ -63,7 +63,7 @@ const Register = () => {
 
       try {
         const response = await fetch(
-          "http://localhost:5000/api/superadmin/register",
+          "https://diagnoops-backend.vercel.app/api/superadmin/register",
           {
             method: "POST",
             headers: {

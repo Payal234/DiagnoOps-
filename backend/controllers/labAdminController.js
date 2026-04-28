@@ -3,12 +3,12 @@ import SuperAdmin from "../models/SuperAdmin.js";
 import bcrypt from "bcryptjs";
 import { sendEmail } from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
-import Razorpay from "razorpay";
+// import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// const razorpay = new Razorpay({
+//   key_id: process.env.RAZORPAY_KEY_ID,
+//   key_secret: process.env.RAZORPAY_KEY_SECRET,
+// });
 
 export const loginLabAdmin = async (req, res) => {
   try {
@@ -301,7 +301,7 @@ export const registerLabAdmin = async (req, res) => {
 
       if (superAdminEmails.length > 0) {
         const subject = "New Lab Registration Awaiting Approval";
-        const approveUrl = (process.env.ADMIN_PANEL_URL || "http://localhost:5174").replace(/\/$/, "") + "/super-admin/manage-labs";
+        const approveUrl = (process.env.ADMIN_PANEL_URL || "https://diagnoops-superadmin.vercel.app/login").replace(/\/$/, "") + "/super-admin/manage-labs";
 
         const html = `
           <h2>New Lab Registration</h2>
@@ -362,163 +362,75 @@ export const updateLabAdminStatus = async (req, res) => {
     }
 
     const lab = await LabAdmin.findById(id).select("-password");
-    if (!lab) return res.status(404).json({ message: "Lab not found" });
+    if (!lab) {
+      return res.status(404).json({ message: "Lab not found" });
+    }
 
     const previousStatus = lab.status;
 
-    // 🔥 WHEN APPROVING → CREATE RAZORPAY ACCOUNT
-    if (previousStatus !== "approved" && status === "approved") {
+    // ✅ Update status
+      lab.status = status;
+      // When approving, try creating Razorpay Route account, but do not block approval on failure.
+      if (previousStatus !== "approved" && status === "approved" && !lab.razorpayAccountId) {
+        try {
+          if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+            const account = await razorpay.accounts.create({
+              email: lab.email,
+              phone: lab.mobile,
+              type: "route",
+              legal_business_name: lab.labName || "Lab Business",
+            });
 
-      // 👉 Check if already exists
-      if (!lab.razorpayAccountId) {
-        const account = await razorpay.accounts.create({
-          email: lab.email,
-          phone: lab.mobile,
-          type: "route",
-          legal_business_name: lab.labName || "Lab Business",
-        });
-
-        lab.razorpayAccountId = account.id; // 🔥 SAVE ACCOUNT ID
+            lab.razorpayAccountId = account.id;
+          } else {
+            console.log("Razorpay keys missing. Skipping Route account creation during approval.");
+          }
+        } catch (razorpayError) {
+          console.log("Razorpay account creation failed during approval:", razorpayError?.message || razorpayError);
+        }
       }
-    }
-
-    lab.status = status;
     await lab.save();
 
-    // ✅ EMAIL (same as your existing)
+    // ✅ Send email only when approved
     if (previousStatus !== "approved" && status === "approved") {
-      const adminPanelUrl = process.env.ADMIN_PANEL_URL || "http://localhost:5174";
-      const base = adminPanelUrl.replace(/\/$/, "");
-      const loginUrl = `${base}/admin/login?email=${encodeURIComponent(lab.email)}`;
+      try {
+        const adminPanelUrl =
+          process.env.ADMIN_PANEL_URL ||
+          "https://diagnoops-adminpanel.vercel.app/admin/login";
 
-      const ownerName = (lab.ownerName && String(lab.ownerName).trim()) || "";
-      const fallbackName =
-        (lab.email && String(lab.email).split("@")[0]) ||
-        (lab.labName && String(lab.labName).trim()) ||
-        "User";
+        const base = adminPanelUrl.replace(/\/$/, "");
+        const loginUrl = `${base}/admin/login?email=${encodeURIComponent(
+          lab.email
+        )}`;
 
-      const subject = "🎉 Your DiagnoOps Profile is Approved";
+        const ownerName =
+          (lab.ownerName && String(lab.ownerName).trim()) || "";
 
-const html = `
-<div style="margin:0;padding:0;background:#f6f9fc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif">
+        const fallbackName =
+          (lab.email && String(lab.email).split("@")[0]) ||
+          (lab.labName && String(lab.labName).trim()) ||
+          "User";
 
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
-    <tr>
-      <td align="center">
+        const subject = "🎉 Your DiagnoOps Profile is Approved";
 
-        <!-- Main Card -->
-        <table width="480" cellpadding="0" cellspacing="0" 
-          style="background:#ffffff;border-radius:14px;padding:32px 28px;box-shadow:0 10px 30px rgba(0,0,0,0.06)">
+        const html = `
+          <h2>Profile Approved 🎉</h2>
+          <p>Hi ${ownerName || fallbackName},</p>
+          <p>Your lab has been approved successfully.</p>
+          <p>Email: ${lab.email}</p>
+          <a href="${loginUrl}">Login to Dashboard</a>
+        `;
 
-          <!-- Logo / Brand -->
-          <tr>
-            <td align="center" style="padding-bottom:20px;">
-              <div style="
-                font-size:20px;
-                font-weight:700;
-                color:#0f172a;
-                letter-spacing:0.5px;
-              ">
-                DiagnoOps
-              </div>
-            </td>
-          </tr>
-
-          <!-- Heading -->
-          <tr>
-            <td align="center">
-              <h1 style="margin:0;font-size:20px;color:#0f172a;">
-                Your profile has been approved 🎉
-              </h1>
-            </td>
-          </tr>
-
-          <!-- Divider -->
-          <tr>
-            <td style="padding:18px 0;">
-              <div style="height:1px;background:#e2e8f0;"></div>
-            </td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="color:#334155;font-size:14px;line-height:1.7">
-
-              <p style="margin:0 0 12px;">
-                Hi <b>${ownerName || fallbackName}</b>,
-              </p>
-
-              <p style="margin:0 0 12px;">
-                Great news! Your lab profile has been successfully approved on <b>DiagnoOps</b>. 
-                You can now access your dashboard and start managing your services.
-              </p>
-
-              <!-- Info Box -->
-              <div style="
-                background:#f8fafc;
-                border:1px solid #e2e8f0;
-                padding:14px;
-                border-radius:10px;
-                margin:18px 0;
-              ">
-                <p style="margin:0;font-size:12px;color:#64748b;">Registered Email</p>
-                <p style="margin:4px 0 0;font-weight:600;color:#0f172a;">
-                  ${lab.email}
-                </p>
-              </div>
-
-              <!-- CTA -->
-              <div style="text-align:center;margin:26px 0;">
-                <a href="${loginUrl}" 
-                  style="
-                    background:#0f172a;
-                    color:#ffffff;
-                    padding:12px 22px;
-                    border-radius:8px;
-                    text-decoration:none;
-                    font-size:14px;
-                    font-weight:600;
-                    display:inline-block;
-                    box-shadow:0 4px 14px rgba(0,0,0,0.15);
-                  ">
-                  Login to Dashboard →
-                </a>
-              </div>
-
-              <p style="margin:0;color:#64748b;font-size:12px;text-align:center">
-                Use the same email and password you registered with.
-              </p>
-
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding-top:24px;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#94a3b8;">
-                © ${new Date().getFullYear()} DiagnoOps. All rights reserved.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-
-      </td>
-    </tr>
-  </table>
-</div>
-`;
-
-      // Don't block approval response if email fails
-      const ok = await sendEmail(lab.email, subject, html);
-      if (!ok) {
-        console.log(`Approval email failed for ${lab.email}`);
+        await sendEmail(lab.email, subject, html);
+      } catch (mailErr) {
+        console.log("Email failed:", mailErr.message);
       }
     }
 
     res.json({ success: true, lab });
+
   } catch (error) {
+    console.error("UPDATE STATUS ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };

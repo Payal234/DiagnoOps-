@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://diagnoops-backend.vercel.app";
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);

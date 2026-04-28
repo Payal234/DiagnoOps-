@@ -69,7 +69,7 @@ const ManageLab = () => {
     try {
       setError("");
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/labadmin/all", {
+      const res = await axios.get("https://diagnoops-backend.vercel.app/api/labadmin/all", {
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });
       const data = res?.data;
@@ -92,7 +92,7 @@ const ManageLab = () => {
       setUpdatingId(id);
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/labadmin/status/${id}`,
+        `https://diagnoops-backend.vercel.app/api/labadmin/status/${id}`,
         { status },
         { headers: { Authorization: token ? `Bearer ${token}` : "" } }
       );
@@ -111,7 +111,7 @@ const ManageLab = () => {
     try {
       setUpdatingId(id);
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/labadmin/${id}`, {
+      await axios.delete(`https://diagnoops-backend.vercel.app/api/labadmin/${id}`, {
         headers: { Authorization: token ? `Bearer ${token}` : "" },
       });
       fetchLabs();

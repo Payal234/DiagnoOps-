@@ -25,7 +25,7 @@ const LabAdminLogin = () => {
       setLoading(true);
 
       const res = await axios.post(
-        "http://localhost:5000/api/labadmin/login",
+        "https://diagnoops-backend.vercel.app/api/labadmin/login",
         form
       );
 

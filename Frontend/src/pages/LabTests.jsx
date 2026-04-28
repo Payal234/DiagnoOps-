@@ -17,10 +17,10 @@ const LabTests = () => {
   useEffect(() => {
     const fetchTests = async () => {
       try {
-        let url = "http://localhost:5000/api/tests";
+        let url = "https://diagnoops-backend.vercel.app/api/tests";
 
         if (labId) {
-          url = `http://localhost:5000/api/tests/lab/${encodeURIComponent(labId)}`;
+          url = `https://diagnoops-backend.vercel.app/api/tests/lab/${encodeURIComponent(labId)}`;
         }
 
         const res = await fetch(url);

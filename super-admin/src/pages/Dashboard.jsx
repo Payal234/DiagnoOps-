@@ -19,7 +19,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchEarnings = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/payment/earnings/superadmin');
+        const res = await fetch('https://diagnoops-backend.vercel.app/api/payment/earnings/superadmin');
         const data = await res.json();
 
         if (res.ok && data.success) {

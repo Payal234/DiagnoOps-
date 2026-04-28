@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://diagnoops-backend.vercel.app";
 
 const AdminLogin = () => {
 	const navigate = useNavigate();

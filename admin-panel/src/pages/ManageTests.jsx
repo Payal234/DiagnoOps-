@@ -39,8 +39,8 @@ const ManageTests = () => {
     try {
       setLoading(true);
       const url = labName
-        ? `http://localhost:5000/api/tests/lab/${encodeURIComponent(labName)}`
-        : "http://localhost:5000/api/tests";
+        ? `https://diagnoops-backend.vercel.app/api/tests/lab/${encodeURIComponent(labName)}`
+        : "https://diagnoops-backend.vercel.app/api/tests";
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load tests");
       const data = await res.json();
@@ -111,7 +111,7 @@ const ManageTests = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/tests/${id}`, {
+      const res = await fetch(`https://diagnoops-backend.vercel.app/api/tests/${id}`, {
         method: "DELETE",
       });
 
@@ -142,8 +142,8 @@ const ManageTests = () => {
 
     const isEdit = Boolean(editingId);
     const url = isEdit
-      ? `http://localhost:5000/api/tests/${editingId}`
-      : "http://localhost:5000/api/tests";
+      ? `https://diagnoops-backend.vercel.app/api/tests/${editingId}`
+      : "https://diagnoops-backend.vercel.app/api/tests";
 
     try {
       setLoading(true);
