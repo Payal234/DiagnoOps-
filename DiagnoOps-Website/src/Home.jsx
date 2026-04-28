@@ -68,7 +68,7 @@ const Home = () => {
   const [labsData, setLabsData]       = useState([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState('')
-  const API_BASE = 'http://localhost:5000'
+  const API_BASE = 'https://diagnoops-backend.vercel.app'
 
   useEffect(() => {
     const fetchLabs = async () => {

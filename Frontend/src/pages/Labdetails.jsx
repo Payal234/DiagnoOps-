@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 const Labdetails = () => {
   const navigate = useNavigate();
 
-  const API_BASE = "http://localhost:5000";
+  const API_BASE = "https://diagnoops-backend.vercel.app";
 
   const [labsData, setLabsData] = useState([]);
   const [loading, setLoading] = useState(true);

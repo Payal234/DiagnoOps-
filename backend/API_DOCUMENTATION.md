@@ -2,7 +2,7 @@
 
 ## Super Admin API Endpoints
 
-Base URL: `http://localhost:5000/api/superadmin`
+Base URL: `https://diagnoops-backend.vercel.app/api/superadmin`
 
 ### 1. Register Super Admin
 
@@ -176,7 +176,7 @@ Authorization: Bearer <jwt-token>
 ```javascript
 const handleSubmit = async (formData) => {
   try {
-    const response = await fetch('http://localhost:5000/api/superadmin/register', {
+    const response = await fetch('https://diagnoops-backend.vercel.app/api/superadmin/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ const handleSubmit = async (formData) => {
 ```javascript
 const handleLogin = async (email, password) => {
   try {
-    const response = await fetch('http://localhost:5000/api/superadmin/login', {
+    const response = await fetch('https://diagnoops-backend.vercel.app/api/superadmin/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ const getProfile = async (adminId) => {
   try {
     const token = localStorage.getItem('token');
     
-    const response = await fetch(`http://localhost:5000/api/superadmin/profile/${adminId}`, {
+    const response = await fetch(`https://diagnoops-backend.vercel.app/api/superadmin/profile/${adminId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -291,7 +291,7 @@ npm install
 npm start
 ```
 
-Server will run on `http://localhost:5000`
+Server will run on `https://diagnoops-backend.vercel.app`
 
 ---
 

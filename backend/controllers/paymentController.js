@@ -4,7 +4,7 @@ import Order from "../models/Order.js";
 import LabAdmin from "../models/LabAdmin.js";
 import UserProfile from "../models/UserProfile.js";
 import { savePatientFromOrder } from "./patientController.js";
-
+import { sendEmail } from "../utils/sendEmail.js";
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_Key_SECRET,
@@ -399,7 +399,21 @@ export const getOrdersByUser = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { bookingStatus } = req.body;
+    const rawBookingStatus = String(req.body?.bookingStatus || "").trim();
+
+    const statusAliases = {
+      booked: "Booked",
+      "sample collected": "Sample Collected",
+      processing: "Processing",
+      "report ready": "Report Ready",
+      approved: "Approved",
+      approvd: "Approved",
+      "booking confirm": "Booking Confirm",
+      "booking confirmed": "Booking Confirm",
+      rejected: "Rejected",
+    };
+
+    const bookingStatus = statusAliases[rawBookingStatus.toLowerCase()] || rawBookingStatus;
 
     const ALLOWED_BOOKING_STEPS = [
       "Booked",
@@ -407,11 +421,11 @@ export const updateOrderStatus = async (req, res) => {
       "Processing",
       "Report Ready",
       "Approved",
-      "booking Confirm",
+      "Booking Confirm",
       "Rejected",
     ];
 
-    if (!orderId || !bookingStatus) {
+    if (!orderId || !rawBookingStatus) {
       return res.status(400).json({ error: "orderId and bookingStatus are required" });
     }
 
@@ -443,6 +457,34 @@ export const updateOrderStatus = async (req, res) => {
     );
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
+    }
+
+    try {
+      if (order.userEmail && bookingStatus === "Booking Confirm") {
+        await sendEmail(
+          order.userEmail,
+          "Booking Confirmed",
+          `
+            <h2>Hello ${order.userName || "User"}</h2>
+            <p>Your booking has been confirmed.</p>
+            <p>Order ID: ${order.orderId}</p>
+          `
+        );
+      }
+
+      if (order.userEmail && bookingStatus === "Approved") {
+        await sendEmail(
+          order.userEmail,
+          "Report Approved",
+          `
+            <h2>Hello ${order.userName || "User"}</h2>
+            <p>Your report is now approved.</p>
+            <p>Order ID: ${order.orderId}</p>
+          `
+        );
+      }
+    } catch (err) {
+      console.log("Email error:", err);
     }
 
     res.json({ success: true, order });

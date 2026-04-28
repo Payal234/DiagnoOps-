@@ -39,7 +39,7 @@ const Bookings = () => {
       return;
     }
 
-    fetch(`http://localhost:5000/api/payment/orders/user/${userId}`)
+    fetch(`https://diagnoops-backend.vercel.app/api/payment/orders/user/${userId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.success) {

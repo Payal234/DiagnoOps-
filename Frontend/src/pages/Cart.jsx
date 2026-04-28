@@ -64,7 +64,7 @@ const Cart = () => {
       const adminId = uniqueItems[0]?.adminId || null;
       const adminAccountId = uniqueItems[0]?.adminAccountId || null;
 
-      const res = await fetch("http://localhost:5000/api/payment/create-order", {
+      const res = await fetch("https://diagnoops-backend.vercel.app/api/payment/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -107,7 +107,7 @@ const Cart = () => {
         handler: async function (response) {
           try {
             const verifyRes = await fetch(
-              "http://localhost:5000/api/payment/verify-payment",
+              "https://diagnoops-backend.vercel.app/api/payment/verify-payment",
               {
                 method: "POST",
                 headers: {

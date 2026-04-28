@@ -8,7 +8,14 @@ const BOOKING_STEPS = [
   "Approved",
 ];
 
-const DECISION_OPTIONS = ["booking Confirm", "Rejected"];
+const DECISION_OPTIONS = ["Rejected"];
+
+const normalizeBookingStatus = (status) => {
+  if (String(status || "").trim().toLowerCase() === "booking confirm") {
+    return "Approved";
+  }
+  return status || "Booked";
+};
 
 const STEP_COLORS = [
   { active: "bg-cyan-500", text: "text-cyan-600", light: "bg-cyan-50" },
@@ -16,6 +23,7 @@ const STEP_COLORS = [
   { active: "bg-indigo-500", text: "text-indigo-600", light: "bg-indigo-50" },
   { active: "bg-violet-500", text: "text-violet-600", light: "bg-violet-50" },
   { active: "bg-emerald-500", text: "text-emerald-600", light: "bg-emerald-50" },
+  { active: "bg-amber-500", text: "text-amber-600", light: "bg-amber-50" },
 ];
 
 const AVATAR_COLORS = [
@@ -35,7 +43,7 @@ const Patients = () => {
   const [view, setView] = useState("patients");
   const abortControllerRef = useRef(null);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
 
   const getToken = () => {
     const raw = (localStorage.getItem("labAdminToken") || localStorage.getItem("adminToken") || "").trim();
@@ -113,7 +121,7 @@ const Patients = () => {
   });
 
   const approvedOrders = orders
-    .filter((o) => o?.bookingStatus === "Approved")
+    .filter((o) => normalizeBookingStatus(o?.bookingStatus) === "Approved")
     .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));
 
   return (
@@ -283,8 +291,8 @@ const Patients = () => {
             const initials = patient.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
             const ac = AVATAR_COLORS[patient.colorIdx];
             const isExpanded = expandedPatient === patient.key;
-            const activeOrders = patient.orders.filter((o) => o?.bookingStatus !== "Approved");
-            const latestStatus = activeOrders[0]?.bookingStatus || "—";
+            const activeOrders = patient.orders.filter((o) => normalizeBookingStatus(o?.bookingStatus) !== "Approved");
+            const latestStatus = normalizeBookingStatus(activeOrders[0]?.bookingStatus) || "—";
             const allPaid = activeOrders.length
               ? activeOrders.every((o) => o.paymentStatus === "success" || o.status === "success")
               : true;
@@ -387,7 +395,8 @@ const Patients = () => {
                     <div className="space-y-3">
                       {activeOrders.map((order, i) => {
                         const isPaid = order.paymentStatus === "success" || order.status === "success";
-                        const statusIndex = Math.max(0, BOOKING_STEPS.indexOf(order.bookingStatus) >= 0 ? BOOKING_STEPS.indexOf(order.bookingStatus) : 0);
+                        const displayStatus = normalizeBookingStatus(order.bookingStatus);
+                        const statusIndex = Math.max(0, BOOKING_STEPS.indexOf(displayStatus) >= 0 ? BOOKING_STEPS.indexOf(displayStatus) : 0);
 
                         return (
                           <div key={order._id || i} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -435,7 +444,7 @@ const Patients = () => {
                                   {BOOKING_STEPS.map((step, index) => {
                                     const isCompleted = index < statusIndex;
                                     const isCurrent = index === statusIndex;
-                                    const sc = STEP_COLORS[index];
+                                                const sc = STEP_COLORS[index] || STEP_COLORS[STEP_COLORS.length - 1];
                                     return (
                                       <div key={step} className="flex-1 flex flex-col items-center relative">
                                         {index !== BOOKING_STEPS.length - 1 && (
@@ -471,7 +480,7 @@ const Patients = () => {
                                   <label className="text-xs text-slate-500 font-medium whitespace-nowrap">Update status:</label>
                                   <select
                                     className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-40 cursor-pointer"
-                                    value={order.bookingStatus || "Booked"}
+                                    value={normalizeBookingStatus(order.bookingStatus)}
                                     onChange={(e) => updateBookingStatus(order._id, e.target.value)}
                                     disabled={updatingOrderId === String(order._id)}
                                   >
@@ -483,7 +492,7 @@ const Patients = () => {
                                   <label className="text-xs text-slate-500 font-medium whitespace-nowrap">Decision:</label>
                                   <select
                                     className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-40 cursor-pointer"
-                                    value={DECISION_OPTIONS.includes(order.bookingStatus) ? order.bookingStatus : ""}
+                                    value={DECISION_OPTIONS.includes(normalizeBookingStatus(order.bookingStatus)) ? normalizeBookingStatus(order.bookingStatus) : ""}
                                     onChange={(e) => updateBookingStatus(order._id, e.target.value)}
                                     disabled={updatingOrderId === String(order._id)}
                                   >

@@ -45,7 +45,7 @@ const stats = [
 
 const Dashboard = () => {
   const [userName, setUserName] = useState("");
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
 
   const slogans = [
     "Trusted Diagnostics, Trusted Care",

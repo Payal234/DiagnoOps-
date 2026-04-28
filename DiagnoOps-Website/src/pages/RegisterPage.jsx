@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState("");
   const backendUrl =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+    import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
   const userDashboardUrl =
     import.meta.env.VITE_USER_DASHBOARD_URL || "http://localhost:5174/";
 

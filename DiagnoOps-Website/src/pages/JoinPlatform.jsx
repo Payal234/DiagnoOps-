@@ -135,7 +135,7 @@ const JoinPlatform = () => {
       const formData = new FormData();
       Object.keys(form).forEach((key) => formData.append(key, form[key]));
       if (licenseFile) formData.append("licenseFile", licenseFile);
-      const res = await axios.post("http://localhost:5000/api/labadmin/register", formData);
+      const res = await axios.post("https://diagnoops-backend.vercel.app/api/labadmin/register", formData);
       if (res.data.success) {
         setSuccessMsg(res.data.message);
         setForm({ ownerName: "", mobile: "", email: "", password: "", labName: "", licenseNumber: "", experience: "", address: "" });
