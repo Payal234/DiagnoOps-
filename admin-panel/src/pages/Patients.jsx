@@ -8,7 +8,7 @@ const BOOKING_STEPS = [
   "Approved",
 ];
 
-const DECISION_OPTIONS = ["Rejected"];
+const DECISION_OPTIONS = ["Confirm", "Rejected"];
 
 const normalizeBookingStatus = (status) => {
   if (String(status || "").trim().toLowerCase() === "booking confirm") {
