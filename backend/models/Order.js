@@ -59,7 +59,7 @@ const orderSchema = new mongoose.Schema({
     fileName: String,
     status: {
       type: String,
-      enum: ["Normal", "Abnormal"],
+      enum: ["Normal", "Abnormal", ""],
       default: "",
     },
     doctorName: String,
