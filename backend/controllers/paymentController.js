@@ -7,7 +7,7 @@ import { savePatientFromOrder } from "./patientController.js";
 import { sendEmail } from "../utils/sendEmail.js";
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_secret: process.env.RAZORPAY_Key_SECRET,
 });
 
 // 👉 SUPER ADMIN ACCOUNT ID (Razorpay Route)
