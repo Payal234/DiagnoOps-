@@ -296,17 +296,30 @@ const Patients = () => {
             )}
           </div>
         ) : (
-          /* Patient List */
           <div className="space-y-4">
-          {patientGroups.map((patient) => {
-            const initials = patient.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-            const ac = AVATAR_COLORS[patient.colorIdx];
-            const isExpanded = expandedPatient === patient.key;
-            const activeOrders = patient.orders.filter((o) => normalizeBookingStatus(o?.bookingStatus) !== "Approved");
-            const latestStatus = normalizeBookingStatus(activeOrders[0]?.bookingStatus) || "—";
-            const allPaid = activeOrders.length
-              ? activeOrders.every((o) => o.paymentStatus === "success" || o.status === "success")
-              : true;
+            {patientGroups.filter((patient) => patient.orders.filter((o) => normalizeBookingStatus(o?.bookingStatus) !== "Approved").length > 0).length === 0 && !loading ? (
+              <div className="text-center py-24 text-slate-400">
+                <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="font-medium text-slate-500">All patients have been approved</p>
+                <p className="text-sm mt-1">Check the History tab to view approved orders.</p>
+              </div>
+            ) : (
+              <>
+                {patientGroups
+                  .map((patient) => {
+                    const activeOrders = patient.orders.filter((o) => normalizeBookingStatus(o?.bookingStatus) !== "Approved");
+                    return { ...patient, activeOrders };
+                  })
+                  .filter((patient) => patient.activeOrders.length > 0)
+                  .map((patient) => {
+                    const initials = patient.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+                    const ac = AVATAR_COLORS[patient.colorIdx];
+                    const isExpanded = expandedPatient === patient.key;
+                    const activeOrders = patient.activeOrders;
+                    const latestStatus = normalizeBookingStatus(activeOrders[0]?.bookingStatus) || "—";
+                    const allPaid = activeOrders.every((o) => o.paymentStatus === "success" || o.status === "success");
 
             return (
               <div key={patient.key} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -540,8 +553,10 @@ const Patients = () => {
                 )}
               </div>
             );
-          })}
-        </div>
+                  })}
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>
