@@ -461,28 +461,99 @@ export const updateOrderStatus = async (req, res) => {
 
     try {
       if (order.userEmail && bookingStatus === "Booking Confirm") {
-        await sendEmail(
-          order.userEmail,
-          "Booking Confirmed",
-          `
-            <h2>Hello ${order.userName || "User"}</h2>
-            <p>Your booking has been confirmed.</p>
-            <p>Order ID: ${order.orderId}</p>
-          `
-        );
-      }
+  const testList = order.items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:8px;border:1px solid #ddd;">${item.name}</td>
+          <td style="padding:8px;border:1px solid #ddd;">${item.quantity || 1}</td>
+          <td style="padding:8px;border:1px solid #ddd;">₹${item.price}</td>
+        </tr>
+      `
+    )
+    .join("");
 
-      if (order.userEmail && bookingStatus === "Approved") {
-        await sendEmail(
-          order.userEmail,
-          "Report Approved",
-          `
-            <h2>Hello ${order.userName || "User"}</h2>
-            <p>Your report is now approved.</p>
-            <p>Order ID: ${order.orderId}</p>
-          `
-        );
-      }
+  await sendEmail(
+    order.userEmail,
+    "🧪 Booking Confirmed - Diagnoops",
+    `
+    <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; border:1px solid #eee; border-radius:10px; overflow:hidden;">
+      
+      <div style="background:#06b6d4; color:white; padding:15px;">
+        <h2 style="margin:0;">Booking Confirmed ✅</h2>
+      </div>
+
+      <div style="padding:20px;">
+        <p>Hello <strong>${order.userName || "User"}</strong>,</p>
+        <p>Your lab test booking has been <strong>confirmed</strong>.</p>
+
+        <p><strong>Order ID:</strong> ${order.orderId}</p>
+
+        <h3 style="margin-top:20px;">🧾 Test Details</h3>
+
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="padding:8px;border:1px solid #ddd;">Test Name</th>
+              <th style="padding:8px;border:1px solid #ddd;">Qty</th>
+              <th style="padding:8px;border:1px solid #ddd;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${testList}
+          </tbody>
+        </table>
+
+        <p style="margin-top:20px;">
+          Our team will contact you shortly for sample collection.
+        </p>
+
+        <p style="color:#555;">Thank you for choosing Diagnoops 💙</p>
+      </div>
+
+      <div style="background:#f8fafc; text-align:center; padding:10px; font-size:12px; color:#777;">
+        © ${new Date().getFullYear()} Diagnoops. All rights reserved.
+      </div>
+    </div>
+    `
+  );
+}
+if (order.userEmail && bookingStatus === "Approved") {
+  const testNames = order.items.map((item) => item.name).join(", ");
+
+  await sendEmail(
+    order.userEmail,
+    "📄 Report Approved - Diagnoops",
+    `
+    <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; border:1px solid #eee; border-radius:10px; overflow:hidden;">
+      
+      <div style="background:#10b981; color:white; padding:15px;">
+        <h2 style="margin:0;">Report Approved ✅</h2>
+      </div>
+
+      <div style="padding:20px;">
+        <p>Hello <strong>${order.userName || "User"}</strong>,</p>
+
+        <p>Your test report has been <strong>approved</strong> and is ready.</p>
+
+        <p><strong>Order ID:</strong> ${order.orderId}</p>
+
+        <p><strong>Tests:</strong> ${testNames}</p>
+
+        <p style="margin-top:20px;">
+          You can now view/download your report from your dashboard.
+        </p>
+
+        <p style="color:#555;">Stay healthy! 💚</p>
+      </div>
+
+      <div style="background:#f8fafc; text-align:center; padding:10px; font-size:12px; color:#777;">
+        © ${new Date().getFullYear()} Diagnoops. All rights reserved.
+      </div>
+    </div>
+    `
+  );
+}
     } catch (err) {
       console.log("Email error:", err);
     }
