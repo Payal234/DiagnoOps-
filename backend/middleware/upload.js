@@ -14,7 +14,7 @@ const storage = hasCloudinaryConfig
       params: {
         folder: "lab_documents",
         resource_type: "auto",
-        allowed_formats: ["jpg", "png", "jpeg", "pdf"],
+        allowed_formats: ["jpg", "png", "jpeg", "pdf", "doc", "docx"],
       },
     })
   : multer.diskStorage({
@@ -30,6 +30,22 @@ const storage = hasCloudinaryConfig
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    // Allow pdf, doc, docx, jpg, png, jpeg
+    const allowedMimes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type. Allowed: PDF, DOC, DOCX, JPG, PNG`));
+    }
+  },
 });
 
 export default upload;
