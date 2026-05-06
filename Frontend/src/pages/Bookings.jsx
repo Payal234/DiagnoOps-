@@ -223,9 +223,6 @@ const Bookings = () => {
 
                         <div className="mb-4 text-sm text-gray-600 space-y-2">
                           <p>Status: <span className="font-semibold text-emerald-600">{order.bookingStatus || "Booked"}</span></p>
-                          {order.userContact && <p>Contact: <span className="font-medium">{order.userContact}</span></p>}
-                          {order.userAddress && <p>Address: <span className="font-medium">{order.userAddress}</span></p>}
-                          {order.paymentStatus && <p>Payment: <span className={`font-medium ${order.paymentStatus === "success" ? "text-green-600" : "text-amber-600"}`}>{order.paymentStatus === "success" ? "Paid" : "Pending"}</span></p>}
                         </div>
 
                         <div className="space-y-2">
