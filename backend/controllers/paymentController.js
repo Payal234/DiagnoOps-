@@ -7,7 +7,7 @@ import { savePatientFromOrder } from "./patientController.js";
 import { sendEmail } from "../utils/sendEmail.js";
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_Key_SECRET,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 // 👉 SUPER ADMIN ACCOUNT ID (Razorpay Route)
@@ -31,6 +31,14 @@ export const createOrder = async (req, res) => {
       userBloodGroup,
       userAllergies,
     } = req.body;
+
+    // Validate required fields
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Valid amount is required" });
+    }
+    if (!userId && !userEmail) {
+      return res.status(400).json({ error: "userId or userEmail is required" });
+    }
 
     // Backfill missing user fields from user profile (so location can still show
     // even if the frontend didn't send it).
@@ -635,6 +643,8 @@ export const uploadReport = async (req, res) => {
     const { orderId } = req.params;
     const { reportStatus, doctorName } = req.body;
 
+    console.log("Upload Report Request:", { orderId, reportStatus, doctorName, hasFile: !!req.file });
+
     // Check if file was uploaded
     if (!req.file) {
       return res.status(400).json({ error: "File is required" });
@@ -652,7 +662,7 @@ export const uploadReport = async (req, res) => {
 
     // AuthZ: labadmin can upload only their own orders
     if (req.user?.role !== "labadmin") {
-      return res.status(403).json({ error: "Access denied" });
+      return res.status(403).json({ error: "Access denied. Only lab admins can upload reports." });
     }
 
     const labAdminId = req.user?.id;
@@ -662,6 +672,8 @@ export const uploadReport = async (req, res) => {
     // Get file URL (Cloudinary returns path as secure URL, local storage returns filename)
     const fileUrl = req.file.path || `${process.env.BACKEND_URL || "http://localhost:5000"}/uploads/lab_documents/${req.file.filename}`;
     const fileName = req.file.originalname || req.file.filename;
+
+    console.log("File details:", { fileUrl, fileName });
 
     const order = await Order.findOneAndUpdate(
       {
@@ -690,7 +702,7 @@ export const uploadReport = async (req, res) => {
 
     res.json({ success: true, order });
   } catch (err) {
-    console.log(err);
+    console.error("uploadReport error:", err);
     res.status(500).json({ error: "Failed to upload report", details: err.message });
   }
 };
