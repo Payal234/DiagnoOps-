@@ -628,3 +628,69 @@ export const verifyPayment = async (req, res) => {
     res.status(500).send("Verification failed");
   }
 };
+
+// ✅ UPLOAD REPORT CONTROLLER
+export const uploadReport = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reportStatus, doctorName } = req.body;
+
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ error: "File is required" });
+    }
+
+    if (!orderId || !reportStatus || !doctorName) {
+      return res.status(400).json({ 
+        error: "orderId, file, reportStatus, and doctorName are required" 
+      });
+    }
+
+    if (!["Normal", "Abnormal"].includes(reportStatus)) {
+      return res.status(400).json({ error: "reportStatus must be 'Normal' or 'Abnormal'" });
+    }
+
+    // AuthZ: labadmin can upload only their own orders
+    if (req.user?.role !== "labadmin") {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    const labAdminId = req.user?.id;
+    const me = await LabAdmin.findById(labAdminId).select("labName");
+    const myLabName = (me?.labName || "").trim();
+
+    // Get file URL (Cloudinary returns path as secure URL, local storage returns filename)
+    const fileUrl = req.file.path || `${process.env.BACKEND_URL || "http://localhost:5000"}/uploads/lab_documents/${req.file.filename}`;
+    const fileName = req.file.originalname || req.file.filename;
+
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: orderId,
+        $or: [
+          { adminId: labAdminId },
+          { "items.adminId": labAdminId },
+          ...(myLabName ? [{ adminId: myLabName }, { "items.adminId": myLabName }] : []),
+        ],
+      },
+      {
+        report: {
+          fileUrl,
+          fileName,
+          status: reportStatus,
+          doctorName,
+          uploadedAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found or unauthorized" });
+    }
+
+    res.json({ success: true, order });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Failed to upload report", details: err.message });
+  }
+};

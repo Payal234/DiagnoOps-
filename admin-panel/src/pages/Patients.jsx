@@ -39,6 +39,7 @@ const Patients = () => {
   const [expandedPatient, setExpandedPatient] = useState(null);
   const [view, setView] = useState("patients");
   const [orderDecisions, setOrderDecisions] = useState({});
+  const [reportUploadState, setReportUploadState] = useState({});
   const abortControllerRef = useRef(null);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
@@ -104,6 +105,43 @@ const Patients = () => {
       setError(e?.message || "Failed to update status");
     } finally {
       setUpdatingOrderId("");
+    }
+  };
+
+  const uploadReport = async (dbOrderId, file, reportStatus, doctorName) => {
+    const adminToken = getToken();
+    if (!adminToken) { setError("Please login again. Token missing."); return; }
+    try {
+      setReportUploadState((prev) => ({ ...prev, [dbOrderId]: { ...prev[dbOrderId], uploading: true } }));
+      setError("");
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("reportStatus", reportStatus);
+      formData.append("doctorName", doctorName);
+
+      // Send to backend - backend will handle Cloudinary upload
+      const res = await fetch(`${backendUrl}/api/payment/orders/${dbOrderId}/report`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || "Failed to upload report");
+      setOrders((prev) => prev.map((o) => (o._id === dbOrderId ? data.order : o)));
+      setReportUploadState((prev) => ({ ...prev, [dbOrderId]: { uploading: false, success: true } }));
+      setTimeout(() => {
+        setReportUploadState((prev) => {
+          const newState = { ...prev };
+          delete newState[dbOrderId];
+          return newState;
+        });
+      }, 3000);
+    } catch (e) {
+      setError(e?.message || "Failed to upload report");
+      setReportUploadState((prev) => ({ ...prev, [dbOrderId]: { uploading: false, error: e?.message } }));
     }
   };
 
@@ -538,6 +576,98 @@ const Patients = () => {
                                   </span>
                                 )}
                               </div>
+
+                              {/* Report Upload Section */}
+                              {normalizeBookingStatus(order.bookingStatus) === "Report Ready" && (
+                                <div className="mt-4 pt-4 border-t border-slate-200 bg-cyan-50 rounded-lg p-4">
+                                  <p className="text-sm font-semibold text-slate-700 mb-3">📋 Upload Report</p>
+                                  <div className="space-y-3">
+                                    {/* File Upload */}
+                                    <div>
+                                      <label className="text-xs text-slate-600 font-medium block mb-1">Upload File (PDF/DOC)</label>
+                                      <input
+                                        type="file"
+                                        accept=".pdf,.doc,.docx"
+                                        className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            setReportUploadState((prev) => ({ ...prev, [order._id]: { ...prev[order._id], file } }));
+                                          }
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Report Status */}
+                                    <div>
+                                      <label className="text-xs text-slate-600 font-medium block mb-1">Report Status</label>
+                                      <select
+                                        className="w-full bg-white border border-slate-300 text-slate-700 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400 cursor-pointer"
+                                        value={reportUploadState[order._id]?.reportStatus || ""}
+                                        onChange={(e) => {
+                                          setReportUploadState((prev) => ({ ...prev, [order._id]: { ...prev[order._id], reportStatus: e.target.value } }));
+                                        }}
+                                      >
+                                        <option value="">Select Status</option>
+                                        <option value="Normal">Normal</option>
+                                        <option value="Abnormal">Abnormal</option>
+                                      </select>
+                                    </div>
+
+                                    {/* Doctor Name */}
+                                    <div>
+                                      <label className="text-xs text-slate-600 font-medium block mb-1">Doctor Name</label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g., Dr. Sharma"
+                                        className="w-full bg-white border border-slate-300 text-slate-700 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                                        value={reportUploadState[order._id]?.doctorName || ""}
+                                        onChange={(e) => {
+                                          setReportUploadState((prev) => ({ ...prev, [order._id]: { ...prev[order._id], doctorName: e.target.value } }));
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <button
+                                      onClick={() => {
+                                        const state = reportUploadState[order._id];
+                                        if (!state?.file) { setError("Please select a file"); return; }
+                                        if (!state?.reportStatus) { setError("Please select report status"); return; }
+                                        if (!state?.doctorName) { setError("Please enter doctor name"); return; }
+                                        uploadReport(order._id, state.file, state.reportStatus, state.doctorName);
+                                      }}
+                                      disabled={reportUploadState[order._id]?.uploading}
+                                      className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2"
+                                    >
+                                      {reportUploadState[order._id]?.uploading ? (
+                                        <>
+                                          <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                          </svg>
+                                          Uploading…
+                                        </>
+                                      ) : reportUploadState[order._id]?.success ? (
+                                        <>✓ Report Uploaded</>
+                                      ) : (
+                                        <>⬆ Upload Report</>
+                                      )}
+                                    </button>
+
+                                    {/* Display existing report */}
+                                    {order.report?.fileUrl && (
+                                      <div className="mt-2 p-2 bg-white rounded border border-emerald-200">
+                                        <p className="text-xs text-slate-500 mb-1">✓ Report uploaded by: <span className="font-semibold">{order.report.doctorName}</span></p>
+                                        <p className="text-xs text-slate-500">Status: <span className={`font-semibold ${order.report.status === "Normal" ? "text-emerald-600" : "text-red-600"}`}>{order.report.status}</span></p>
+                                        <a href={order.report.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-600 hover:underline mt-1 block">
+                                          📥 View Report
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );

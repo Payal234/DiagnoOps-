@@ -302,7 +302,7 @@ const Bookings = () => {
                 key={tab}
                 type="button"
                 onClick={() => setView(tab)}
-                className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all capitalize ${
+                className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all capitalize cursor-pointer${
                   view === tab
                     ? "bg-white text-blue-600 shadow-sm border border-blue-100"
                     : "text-gray-500 hover:text-gray-700"
