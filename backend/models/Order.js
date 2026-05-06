@@ -53,6 +53,18 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+
+  report: {
+    fileUrl: String,
+    fileName: String,
+    status: {
+      type: String,
+      enum: ["Normal", "Abnormal"],
+      default: "",
+    },
+    doctorName: String,
+    uploadedAt: Date,
+  },
 }, { timestamps: true });
 
 export default mongoose.model("Order", orderSchema);
