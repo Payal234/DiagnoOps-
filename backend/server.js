@@ -9,26 +9,12 @@ import superAdminRoutes from "./routes/superAdminRoutes.js";
 import labAdminRoutes from "./routes/labAdminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import patientRoutes from "./routes/patientRoutes.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 
 
 dotenv.config();
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
-// Create uploads directory if it doesn't exist (skip on Vercel/serverless)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, "uploads", "lab_documents");
-try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-} catch (err) {
-  // Silently skip on Vercel (read-only filesystem)
-  console.warn("Upload directory creation skipped (likely Vercel environment)");
-}
+// Files are uploaded to Cloudinary, not stored locally
 
 const app = express();
 
@@ -39,9 +25,6 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
-
-// serve uploaded documents when using local storage
-app.use("/uploads", express.static("uploads"));
 
 mongoose.connect(process.env.MONGO_URL)
 .then(()=>console.log("MongoDB Connected"))
