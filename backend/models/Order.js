@@ -48,6 +48,11 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: "Booked",
   },
+
+  decisionStatus: {
+    type: String,
+    default: "",
+  },
 }, { timestamps: true });
 
 export default mongoose.model("Order", orderSchema);

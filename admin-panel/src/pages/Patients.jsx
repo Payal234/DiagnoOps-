@@ -8,12 +8,9 @@ const BOOKING_STEPS = [
   "Approved",
 ];
 
-const DECISION_OPTIONS = ["Confirm", "Rejected"];
+const DECISION_OPTIONS = ["Booking Confirm", "Rejected"];
 
 const normalizeBookingStatus = (status) => {
-  if (String(status || "").trim().toLowerCase() === "booking confirm") {
-    return "Approved";
-  }
   return status || "Booked";
 };
 
@@ -41,6 +38,7 @@ const Patients = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState("");
   const [expandedPatient, setExpandedPatient] = useState(null);
   const [view, setView] = useState("patients");
+  const [orderDecisions, setOrderDecisions] = useState({});
   const abortControllerRef = useRef(null);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://diagnoops-backend.vercel.app";
@@ -68,7 +66,16 @@ const Patients = () => {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch orders");
-        setOrders(Array.isArray(data.orders) ? data.orders : []);
+        const fetchedOrders = Array.isArray(data.orders) ? data.orders : [];
+        setOrders(fetchedOrders);
+        // Initialize decision state for each order
+        const decisions = {};
+        fetchedOrders.forEach((order) => {
+          if (DECISION_OPTIONS.includes(order.bookingStatus)) {
+            decisions[order._id] = order.bookingStatus;
+          }
+        });
+        setOrderDecisions(decisions);
       })
       .catch((err) => { if (err.name !== "AbortError") { console.error(err); setError(err.message); } })
       .finally(() => setLoading(false));
@@ -89,6 +96,10 @@ const Patients = () => {
       const data = await res.json();
       if (!res.ok || !data?.success) throw new Error(data?.error || data?.message || "Failed to update status");
       setOrders((prev) => prev.map((o) => (o._id === dbOrderId ? data.order : o)));
+      // Update decision state if this was a decision update
+      if (DECISION_OPTIONS.includes(nextStatus)) {
+        setOrderDecisions((prev) => ({ ...prev, [dbOrderId]: nextStatus }));
+      }
     } catch (e) {
       setError(e?.message || "Failed to update status");
     } finally {
@@ -482,7 +493,7 @@ const Patients = () => {
                                     className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-40 cursor-pointer"
                                     value={normalizeBookingStatus(order.bookingStatus)}
                                     onChange={(e) => updateBookingStatus(order._id, e.target.value)}
-                                    disabled={updatingOrderId === String(order._id)}
+                                      disabled={updatingOrderId === String(order._id)}
                                   >
                                     {BOOKING_STEPS.map((s) => <option key={s} value={s}>{s}</option>)}
                                   </select>
@@ -492,8 +503,11 @@ const Patients = () => {
                                   <label className="text-xs text-slate-500 font-medium whitespace-nowrap">Decision:</label>
                                   <select
                                     className="bg-white border border-slate-200 text-slate-700 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 disabled:opacity-40 cursor-pointer"
-                                    value={DECISION_OPTIONS.includes(normalizeBookingStatus(order.bookingStatus)) ? normalizeBookingStatus(order.bookingStatus) : ""}
-                                    onChange={(e) => updateBookingStatus(order._id, e.target.value)}
+                                    value={orderDecisions[order._id] || ""}
+                                    onChange={(e) => {
+                                      setOrderDecisions((prev) => ({ ...prev, [order._id]: e.target.value }));
+                                      updateBookingStatus(order._id, e.target.value);
+                                    }}
                                     disabled={updatingOrderId === String(order._id)}
                                   >
                                     <option value="" disabled>Select decision</option>
